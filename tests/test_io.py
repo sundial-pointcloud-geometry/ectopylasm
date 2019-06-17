@@ -4,14 +4,17 @@
 """
 Tests for the io module.
 """
-# import pytest
-
+import os
+import numpy as np
 from ectopylasm import io
 
 
-def test_load_plyfile():
-    plydata = io.load_plyfile('data/cube.ply')
+TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 
-    assert plydata['x'] == [-1, 1, 1, -1, -1, 1, 1, -1]
-    assert plydata['y'] == [-1, -1, 1, 1, -1, -1, 1, 1]
-    assert plydata['z'] == [-1, -1, -1, -1, 1, 1, 1, 1]
+
+def test_load_plyfile():
+    plydata = io.load_plyfile(TEST_DIR + '/data/cube.ply')
+
+    assert np.all(plydata['vertex']['x'] == [-1, 1, 1, -1, -1, 1, 1, -1])
+    assert np.all(plydata['vertex']['y'] == [-1, -1, 1, 1, -1, -1, 1, 1])
+    assert np.all(plydata['vertex']['z'] == [-1, -1, -1, -1, 1, 1, 1, 1])

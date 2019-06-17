@@ -45,7 +45,7 @@ setup(
     install_requires=[
         'numpy',
         'plyfile',
-        'vaex',
+        'vaex-core',
         'pandas',
         'ipyvolume',
         'pptk'
