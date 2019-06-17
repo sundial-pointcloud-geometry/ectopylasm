@@ -16,7 +16,9 @@ pyroma:
     run: true
 
 pep8:
-    full: true
+    disable: [
+        E501, # line too long (> 79 characters)
+    ]
 
 pep257:
     disable: [

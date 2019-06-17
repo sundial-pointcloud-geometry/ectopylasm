@@ -18,3 +18,27 @@ def test_load_plyfile():
     assert np.all(plydata['vertex']['x'] == [-1, 1, 1, -1, -1, 1, 1, -1])
     assert np.all(plydata['vertex']['y'] == [-1, -1, 1, 1, -1, -1, 1, 1])
     assert np.all(plydata['vertex']['z'] == [-1, -1, -1, -1, 1, 1, 1, 1])
+
+
+def test_vertex_dict_from_plyfile():
+    vertices = io.vertex_dict_from_plyfile(TEST_DIR + '/data/cube.ply')
+
+    assert np.all(vertices['x'] == [-1, 1, 1, -1, -1, 1, 1, -1])
+    assert np.all(vertices['y'] == [-1, -1, 1, 1, -1, -1, 1, 1])
+    assert np.all(vertices['z'] == [-1, -1, -1, -1, 1, 1, 1, 1])
+
+
+def test_pandas_vertices_from_plyfile():
+    vertices = io.pandas_vertices_from_plyfile(TEST_DIR + '/data/cube.ply')
+
+    assert np.all(vertices['x'] == [-1, 1, 1, -1, -1, 1, 1, -1])
+    assert np.all(vertices['y'] == [-1, -1, 1, 1, -1, -1, 1, 1])
+    assert np.all(vertices['z'] == [-1, -1, -1, -1, 1, 1, 1, 1])
+
+
+def test_vaex_vertices_from_plyfile():
+    vertices = io.vaex_vertices_from_plyfile(TEST_DIR + '/data/cube.ply')
+
+    assert np.all(vertices['x'] == [-1, 1, 1, -1, -1, 1, 1, -1])
+    assert np.all(vertices['y'] == [-1, -1, 1, 1, -1, -1, 1, 1])
+    assert np.all(vertices['z'] == [-1, -1, -1, -1, 1, 1, 1, 1])
