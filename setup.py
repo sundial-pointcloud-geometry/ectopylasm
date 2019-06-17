@@ -44,6 +44,9 @@ setup(
     test_suite='tests',
     install_requires=[
         'numpy',
+        'plyfile',
+        'vaex',
+        'pandas',
         'ipyvolume',
         'pptk'
     ],
