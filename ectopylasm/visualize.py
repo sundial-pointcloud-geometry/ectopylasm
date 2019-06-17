@@ -32,7 +32,7 @@ def ipv_plot_df(df, sample_frac=1, shape='circle2d', **kwargs):
     if sample_frac < 1:
         xyz = random_sample(df, len(df), sample_frac)
     else:
-        xyz = dict(x=df['x'], y=df['y'], z=df['z'])
+        xyz = dict(x=df['x'].values, y=df['y'].values, z=df['z'].values)
     ipv.scatter(**xyz, shape=shape, **kwargs)
     ipv.show()
 
