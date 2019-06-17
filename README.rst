@@ -2,7 +2,7 @@
 ectopylasm
 ################################################################################
 
-Tools for visualizing and fitting ethereal pointcloud data.
+Tools for visualizing and fitting pointcloud data.
 
 Installation
 ************

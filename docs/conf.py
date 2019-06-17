@@ -169,6 +169,6 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'ectopylasm', u'ectopylasm Documentation',
-     author, 'ectopylasm', "Tools for visualizing and fitting ethereal pointcloud data.",
+     author, 'ectopylasm', "Tools for visualizing and fitting pointcloud data.",
      'Miscellaneous'),
 ]

@@ -17,7 +17,7 @@ with open('README.rst') as readme_file:
 setup(
     name='ectopylasm',
     version=version['__version__'],
-    description="Tools for visualizing and fitting ethereal pointcloud data.",
+    description="Tools for visualizing and fitting pointcloud data.",
     long_description=readme + '\n\n',
     author="E. G. Patrick Bos",
     author_email='egpbos@gmail.com',
