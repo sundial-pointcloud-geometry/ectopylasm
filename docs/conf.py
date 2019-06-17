@@ -45,7 +45,7 @@ templates_path = ['_templates']
 # source_suffix = ['.rst', '.md']
 source_suffix = '.rst'
 
-# The master toctree document.
+# The master table of contents tree document.
 master_doc = 'index'
 
 # General information about the project.
@@ -81,7 +81,6 @@ pygments_style = 'sphinx'
 todo_include_todos = False
 
 
-
 # -- Options for HTML output ----------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
@@ -102,8 +101,8 @@ html_static_path = ['_static']
 html_context = {
     'css_files': [
         '_static/theme_overrides.css',  # override wide tables in RTD theme
-        ],
-     }
+    ],
+}
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
