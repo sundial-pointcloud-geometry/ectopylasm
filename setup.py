@@ -42,7 +42,7 @@ setup(
     ],
     test_suite='tests',
     install_requires=[
-        'numpy',
+        'numpy>=1.16',
         'plyfile',
         'vaex-core',
         'pandas',
