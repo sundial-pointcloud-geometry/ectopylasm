@@ -1,0 +1,6 @@
+numpy
+plyfile
+vaex-core
+pandas
+ipyvolume
+pptk
