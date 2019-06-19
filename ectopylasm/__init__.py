@@ -9,3 +9,4 @@ __email__ = 'egpbos@gmail.com'
 
 from .io import *
 from .visualize import *
+from .geometry import *
