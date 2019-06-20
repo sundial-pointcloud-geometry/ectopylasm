@@ -48,7 +48,8 @@ setup(
         'pandas',
         'ipyvolume',
         'pptk',
-        'symfit'
+        'symfit',
+        'tqdm'
     ],
     setup_requires=[
         # dependency for `python setup.py test`

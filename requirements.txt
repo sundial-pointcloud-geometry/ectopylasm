@@ -5,3 +5,4 @@ pandas
 ipyvolume
 pptk
 symfit
+tqdm
