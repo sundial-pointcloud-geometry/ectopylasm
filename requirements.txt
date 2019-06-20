@@ -4,3 +4,4 @@ vaex-core
 pandas
 ipyvolume
 pptk
+symfit

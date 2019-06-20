@@ -47,7 +47,8 @@ setup(
         'vaex-core',
         'pandas',
         'ipyvolume',
-        'pptk'
+        'pptk',
+        'symfit'
     ],
     setup_requires=[
         # dependency for `python setup.py test`
