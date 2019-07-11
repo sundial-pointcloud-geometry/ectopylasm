@@ -5,7 +5,7 @@ import symfit as sf
 def fit_plane(xyz):
     """
 
-    Note: An alternative implementation is possible that omits the `f`
+    Dev note: An alternative implementation is possible that omits the `f`
     variable, and thus has one fewer degree of freedom. This means the fit is
     easier and maybe more precise. This could be tested. The notebook
     req4.1_fit_plane.ipynb in the explore repository

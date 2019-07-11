@@ -30,12 +30,12 @@ def pptk_plot_plydata(plydata, **kwargs):
     pptk.viewer(np.array([plydata['vertex']['x'], plydata['vertex']['y'], plydata['vertex']['z']]).T)
 
 
-def ipv_plot_df(df, sample_frac=1, shape='circle2d', **kwargs):
+def ipv_plot_df(df, sample_frac=1, marker='circle_2d', **kwargs):
     if sample_frac < 1:
         xyz = random_sample(df, len(df), sample_frac)
     else:
         xyz = dict(x=df['x'].values, y=df['y'].values, z=df['z'].values)
-    fig = ipv.scatter(**xyz, shape=shape, **kwargs)
+    fig = ipv.scatter(**xyz, marker=marker, **kwargs)
     return fig
 
 
