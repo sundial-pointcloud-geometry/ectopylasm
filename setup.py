@@ -50,7 +50,8 @@ setup(
         'ipyvolume',
         'pptk',
         'symfit',
-        'tqdm'
+        'tqdm',
+        'h5py'
     ],
     setup_requires=[
         # dependency for `python setup.py test`

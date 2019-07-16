@@ -6,3 +6,4 @@ ipyvolume
 pptk
 symfit
 tqdm
+h5py
