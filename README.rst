@@ -4,6 +4,13 @@ ectopylasm
 
 Tools for visualizing and fitting pointcloud data.
 
+.. image:: https://travis-ci.org/sundial-pointcloud-geometry/ectopylasm.svg?branch=master
+    :target: https://travis-ci.org/sundial-pointcloud-geometry/ectopylasm
+
+.. image:: https://codecov.io/gh/sundial-pointcloud-geometry/ectopylasm/branch/master/graph/badge.svg
+  :target: https://codecov.io/gh/sundial-pointcloud-geometry/ectopylasm
+
+
 Installation
 ************
 

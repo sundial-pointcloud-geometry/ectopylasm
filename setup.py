@@ -64,6 +64,7 @@ setup(
         'pytest',
         'pytest-cov',
         'pycodestyle',
+        'codecov',
     ],
     extras_require={
         'dev': [
