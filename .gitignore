@@ -1,3 +1,8 @@
+## PROJECT SPECIFIC PATTERNS
+ObjID*.ply
+*.cache.ecto
+
+## GENERIC
 *.py[cod]
 *.egg-info
 *.eggs
