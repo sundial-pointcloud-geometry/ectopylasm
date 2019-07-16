@@ -30,4 +30,5 @@ def test_filter_points_cone():
                     ]).T
 
     p_filtered = geometry.filter_points_cone(xyz, 0.5, 0.5, 0.2)
-    assert p_filtered == [[0, 0, 0.5]]
+    print(p_filtered)
+    assert np.all(np.array(p_filtered) == np.array([[0, 0, 0.5]]))

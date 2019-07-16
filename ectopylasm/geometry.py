@@ -4,6 +4,11 @@ import numpy as np
 import sympy as sy
 import tqdm
 
+import logging
+
+logger = logging.getLogger('ectopylasm.geometry')
+logger.setLevel(logging.INFO)
+
 
 def normalize_vector(n):
     """Input vector `n` divided by its absolute size yields a vector of size 1."""
@@ -284,15 +289,21 @@ def filter_points_cone(points_xyz, height, radius, thickness,
                                                         base_pos=base_pos_2, return_extra=True)
         if flag_cone2 is False or flag_cone1 is None:
             # it is definitely outside of the cones' range
+            logger.debug(f"case 1: {p_i} was ignored")
             pass
         elif flag_cone1 is False:
             # the first condition is logically enclosed in the second, but the
             # first is faster and already covers a large part of the cases/volume:
-            if d_cone1 <= thickness or \
-               d_cone1 <= thickness / np.cos(vals1['point_apex_angle'] - vals1['opening_angle'] - np.pi / 2):
+            if abs(d_cone1) <= thickness or \
+               abs(d_cone1) <= thickness / np.cos(vals1['point_apex_angle'] - vals1['opening_angle'] - np.pi / 2):
                 p_filtered.append(p_i)
+                logger.debug(f"case 2: {p_i} was added")
             else:
+                logger.debug(f"case 3: {p_i} was ignored")
                 pass
-        elif d_cone1 <= thickness and d_cone2 <= thickness:
+        elif abs(d_cone1) <= thickness and abs(d_cone2) <= thickness:
             p_filtered.append(p_i)
+            logger.debug(f"case 4: {p_i} was added")
+        else:
+            logger.debug(f"case 5: {p_i} was ignored")
     return p_filtered
