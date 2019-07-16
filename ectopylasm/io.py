@@ -3,7 +3,7 @@ import pandas as pd
 import vaex as vx
 import logging
 
-logger = logging.getLogger('sundial-pointcloud-geometry.explore')
+logger = logging.getLogger('ectopylasm.io')
 logger.setLevel(logging.DEBUG)
 
 
