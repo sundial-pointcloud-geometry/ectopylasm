@@ -1,4 +1,4 @@
-""" Lint tests """
+"""Lint tests."""
 import os
 import textwrap
 

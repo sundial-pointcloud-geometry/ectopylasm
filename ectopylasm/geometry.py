@@ -1,15 +1,19 @@
+"""Calculations on shapes and vectors."""
+
 import numpy as np
 import sympy as sy
 import tqdm
 
 
 def normalize_vector(n):
+    """Input vector `n` divided by its absolute size yields a vector of size 1."""
     n_size = n[0] * n[0] + n[1] * n[1] + n[2] * n[2]
     n = (n[0] / n_size, n[1] / n_size, n[2] / n_size)
     return n
 
 
 def angle_between_two_vectors(a, b):
+    """Calculate the angle in radians between two vectors `a` and `b`."""
     return np.arccos(np.sum(a * b) / np.sqrt(np.sum(a**2)) / np.sqrt(np.sum(b**2)))
 
 
@@ -80,6 +84,17 @@ def plane_point_from_d(n, d):
 
 
 def filter_points_plane(points_xyz, plane_point, plane_normal, plane_thickness, d=None):
+    """
+    Select the points that are within the thick plane.
+
+    points_xyz: a vector of shape (3, N) representing N points in 3D space
+    plane_point: a point in the plane
+    plane_normal: the normal vector to the plane (x, y, z; any iterable)
+    plane_thickness: the thickness of the plane (the distance between the two
+                     composing planes)
+    d [optional]: the constant in the plane equation ax + by + cz + d = 0; if
+                  specified, `plane_point` will be ignored
+    """
     if d is not None:
         plane_point = plane_point_from_d(plane_normal, d)
     point1, point2 = thick_plane_points(plane_point, plane_normal, plane_thickness)
@@ -94,11 +109,12 @@ def filter_points_plane(points_xyz, plane_point, plane_normal, plane_thickness, 
     return p_filtered
 
 
-def cone_surface(height, radius, rot_x=2*np.pi, rot_y=2*np.pi, base_pos=(0, 0, 0), n_steps=20):
+def cone_surface(height, radius, rot_x=2 * np.pi, rot_y=2 * np.pi,
+                 base_pos=(0, 0, 0), n_steps=20):
     """
     Calculate coordinates of the surface of a cone.
 
-    height: height along the z-axis
+    height: height along the cone's central axis
     radius: radius of the circle
     rot_x: rotation angle about the x axis (radians)
     rot_y: rotation angle about the y axis (radians)
@@ -137,6 +153,7 @@ def cone_surface(height, radius, rot_x=2*np.pi, rot_y=2*np.pi, base_pos=(0, 0, 0
 
 
 def cone_axis_from_rotation(rot_x, rot_y):
+    """Get the cone's axis unit vector from its rotation angles (radians)."""
     # z-unit vector (0, 0, 1) rotated twice
     cone_axis = (0, -np.sin(rot_x), np.cos(rot_x))  # rotation around x-axis
     cone_axis = np.array((-np.sin(rot_y) * cone_axis[2],
@@ -146,6 +163,20 @@ def cone_axis_from_rotation(rot_x, rot_y):
 
 
 def thick_cone_base_positions(height, radius, thickness, rot_x, rot_y, base_pos):
+    """
+    Convert cone base position to two thick cone base positions.
+
+    Given the cone parameters, return two base positions along the cone axis
+    that are a certain distance apart, such that the distance between the
+    cone surfaces (the directrices) is `thickness` apart.
+
+    height: height along the cone's central axis
+    radius: radius of the circle
+    thickness: distance between the two cone surfaces (i.e. their directrices)
+    rot_x: rotation angle about the x axis (radians)
+    rot_y: rotation angle about the y axis (radians)
+    base_pos: translation of base of cone to this position, iterable of three numbers
+    """
     thickness = abs(thickness)
     base_distance = thickness / radius * height * np.sqrt(1 + radius**2 / height**2)  # trigonometry
 
@@ -157,18 +188,26 @@ def thick_cone_base_positions(height, radius, thickness, rot_x, rot_y, base_pos)
     return base_pos_1, base_pos_2
 
 
-def cone_apex_position(height, rot_x=2*np.pi, rot_y=2*np.pi, base_pos=(0, 0, 0)):
+def cone_apex_position(height, rot_x=2 * np.pi, rot_y=2 * np.pi, base_pos=(0, 0, 0)):
+    """
+    Get cone apex position from cone parameters.
+
+    height: height along the cone's central axis
+    rot_x: rotation angle about the x axis (radians)
+    rot_y: rotation angle about the y axis (radians)
+    base_pos: translation of base of cone to this position, iterable of three numbers
+    """
     cone_axis = cone_axis_from_rotation(rot_x, rot_y)
     return np.array(base_pos) + cone_axis * height
 
 
 def cone_opening_angle(height, radius):
-    """Twice the opening angle is the maximum angle between directrices"""
+    """Twice the opening angle is the maximum angle between directrices."""
     return np.arctan(radius / height)
 
 
 def point_distance_to_cone(point, height, radius,
-                           rot_x=2*np.pi, rot_y=2*np.pi, base_pos=(0, 0, 0),
+                           rot_x=2 * np.pi, rot_y=2 * np.pi, base_pos=(0, 0, 0),
                            return_extra=False):
     """
     Get distance of point to cone.
@@ -221,7 +260,18 @@ def point_distance_to_cone(point, height, radius,
 
 
 def filter_points_cone(points_xyz, height, radius, thickness,
-                       rot_x=2*np.pi, rot_y=2*np.pi, base_pos=(0, 0, 0)):
+                       rot_x=2 * np.pi, rot_y=2 * np.pi, base_pos=(0, 0, 0)):
+    """
+    Select the points that are within the thick cone.
+
+    points_xyz: a vector of shape (3, N) representing N points in 3D space
+    height: height along the cone's central axis
+    radius: radius of the circle
+    thickness: distance between the two cone surfaces (i.e. their directrices)
+    rot_x: rotation angle about the x axis (radians)
+    rot_y: rotation angle about the y axis (radians)
+    base_pos: translation of base of cone to this position, iterable of three numbers
+    """
     base_pos_1, base_pos_2 = thick_cone_base_positions(height, radius, thickness, rot_x, rot_y, base_pos)
 
     p_filtered = []
@@ -239,7 +289,7 @@ def filter_points_cone(points_xyz, height, radius, thickness,
             # the first condition is logically enclosed in the second, but the
             # first is faster and already covers a large part of the cases/volume:
             if d_cone1 <= thickness or \
-               d_cone1 <= thickness / np.cos(vals1['point_apex_angle'] - vals1['opening_angle'] - np.pi/2):
+               d_cone1 <= thickness / np.cos(vals1['point_apex_angle'] - vals1['opening_angle'] - np.pi / 2):
                 p_filtered.append(p_i)
             else:
                 pass

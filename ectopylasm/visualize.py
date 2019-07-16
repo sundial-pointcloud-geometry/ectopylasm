@@ -1,3 +1,5 @@
+"""Visualization of point cloud data and geometrical shapes."""
+
 import numpy as np
 import logging
 
@@ -12,12 +14,20 @@ logger.setLevel(logging.INFO)
 
 
 def random_sample(xyz, total, sample_frac):
+    """
+    Get a random sample from a point cloud.
+
+    xyz: array of shape (3, N) representing N points in 3D space
+    total: number of points in xyz
+    sample_frac: fraction of the total set that you want to return
+    """
     sample = np.random.choice(total, int(sample_frac * total), replace=False)
     logger.debug("sample size:", int(sample_frac * total), "out of total", total)
     return dict(x=xyz['x'][sample], y=xyz['y'][sample], z=xyz['z'][sample])
 
 
 def ipv_plot_plydata(plydata, sample_frac=1, shape='circle2d', **kwargs):
+    """Plot vertices in a plydata object using ipyvolume."""
     if sample_frac < 1:
         xyz = random_sample(plydata['vertex'], plydata['vertex'].count, sample_frac)
     else:
@@ -27,10 +37,12 @@ def ipv_plot_plydata(plydata, sample_frac=1, shape='circle2d', **kwargs):
 
 
 def pptk_plot_plydata(plydata, **kwargs):
+    """Plot vertices in a plydata object using pptk."""
     pptk.viewer(np.array([plydata['vertex']['x'], plydata['vertex']['y'], plydata['vertex']['z']]).T, **kwargs)
 
 
 def ipv_plot_df(df, sample_frac=1, marker='circle_2d', **kwargs):
+    """Plot vertices in a dataframe using ipyvolume."""
     if sample_frac < 1:
         xyz = random_sample(df, len(df), sample_frac)
     else:
@@ -40,6 +52,7 @@ def ipv_plot_df(df, sample_frac=1, marker='circle_2d', **kwargs):
 
 
 def pptk_plot_df(df, **kwargs):
+    """Plot vertices in a dataframe using pptk."""
     pptk.viewer(np.array([df['x'], df['y'], df['z']]).T, **kwargs)
 
 
@@ -92,16 +105,17 @@ def plot_thick_plane(p, n, thickness=0, d=None, **kwargs):
 
 
 def plot_plane_fit(fit_result, **kwargs):
+    """Plot the plane resulting from a plane fit to a point set."""
     p_fit = fit_result.params
     fig = plot_plane(None, (p_fit['a'], p_fit['b'], p_fit['c']), d=p_fit['d'], **kwargs)
     return fig
 
 
-def plot_cone(height, radius, rot_x=2*np.pi, rot_y=2*np.pi, base_pos=(0, 0, 0), n_steps=20, **kwargs):
+def plot_cone(height, radius, rot_x=2 * np.pi, rot_y=2 * np.pi, base_pos=(0, 0, 0), n_steps=20, **kwargs):
     """
     Draw a cone surface.
 
-    height: height along the z-axis
+    height: height along the cone's central axis
     radius: radius of the circle
     rot_x: rotation angle about the x axis (radians)
     rot_y: rotation angle about the y axis (radians)
@@ -116,7 +130,7 @@ def plot_cone(height, radius, rot_x=2*np.pi, rot_y=2*np.pi, base_pos=(0, 0, 0), 
 
 
 def plot_thick_cone(height, radius, thickness,
-                    rot_x=2*np.pi, rot_y=2*np.pi, base_pos=(0, 0, 0),
+                    rot_x=2 * np.pi, rot_y=2 * np.pi, base_pos=(0, 0, 0),
                     **kwargs):
     """
     Plot two cones separated by a distance `thickness`.
