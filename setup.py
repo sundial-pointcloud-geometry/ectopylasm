@@ -65,6 +65,8 @@ setup(
         'pycodestyle',
     ],
     extras_require={
-        'dev': ['prospector[with_pyroma]', 'yapf', 'isort'],
+        'dev': [
+            'prospector[with_pyroma]==1.1.6.2',  # newer versions have a problem with pylint, see e.g. https://github.com/PyCQA/pylint-plugin-utils/issues/12
+        ],
     }
 )

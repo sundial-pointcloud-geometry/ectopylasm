@@ -15,12 +15,21 @@ ignore-paths:
 pyroma:
     run: true
 
+pylint:
+    run: false
+
+pyflakes:
+    run: true
+
 pep8:
+    full: true
     disable: [
         E501, # line too long (> 79 characters)
+        W503, # line break before binary operator; deprecated in favor of W504
     ]
 
 pep257:
+    run: true
     disable: [
         # Disable because not part of PEP257 official convention:
         # see http://pep257.readthedocs.io/en/latest/error_codes.html

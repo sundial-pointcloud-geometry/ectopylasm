@@ -4,7 +4,7 @@ import logging
 import ipyvolume as ipv
 import pptk
 
-import ectopylasm.geometry as geometry
+from ectopylasm import geometry
 
 
 logger = logging.getLogger('ectopylasm.visualize')
@@ -27,7 +27,7 @@ def ipv_plot_plydata(plydata, sample_frac=1, shape='circle2d', **kwargs):
 
 
 def pptk_plot_plydata(plydata, **kwargs):
-    pptk.viewer(np.array([plydata['vertex']['x'], plydata['vertex']['y'], plydata['vertex']['z']]).T)
+    pptk.viewer(np.array([plydata['vertex']['x'], plydata['vertex']['y'], plydata['vertex']['z']]).T, **kwargs)
 
 
 def ipv_plot_df(df, sample_frac=1, marker='circle_2d', **kwargs):
@@ -40,12 +40,13 @@ def ipv_plot_df(df, sample_frac=1, marker='circle_2d', **kwargs):
 
 
 def pptk_plot_df(df, **kwargs):
-    pptk.viewer(np.array([df['x'], df['y'], df['z']]).T)
+    pptk.viewer(np.array([df['x'], df['y'], df['z']]).T, **kwargs)
 
 
 def plot_plane(p, n, x_lim=None, z_lim=None, d=None):
     """
     Draw a plane.
+
     The limited coordinates are called x and z, corresponding to the first and
     third components of `p` and `n`. The final y coordinate is calculated
     based on the equation for a plane.
@@ -93,4 +94,37 @@ def plot_thick_plane(p, n, thickness=0, d=None, **kwargs):
 def plot_plane_fit(fit_result, **kwargs):
     p_fit = fit_result.params
     fig = plot_plane(None, (p_fit['a'], p_fit['b'], p_fit['c']), d=p_fit['d'], **kwargs)
+    return fig
+
+
+def plot_cone(height, radius, rot_x=2*np.pi, rot_y=2*np.pi, base_pos=(0, 0, 0), n_steps=20, **kwargs):
+    """
+    Draw a cone surface.
+
+    height: height along the z-axis
+    radius: radius of the circle
+    rot_x: rotation angle about the x axis (radians)
+    rot_y: rotation angle about the y axis (radians)
+    base_pos: translation of base of cone to this position, iterable of three numbers
+    n_steps: number of steps in the parametric range used for drawing (more gives a
+             smoother surface, but may render more slowly)
+    """
+    fig = ipv.plot_surface(*geometry.cone_surface(height, radius, rot_x=rot_x, rot_y=rot_y,
+                                                  base_pos=base_pos, n_steps=n_steps),
+                           **kwargs)
+    return fig
+
+
+def plot_thick_cone(height, radius, thickness,
+                    rot_x=2*np.pi, rot_y=2*np.pi, base_pos=(0, 0, 0),
+                    **kwargs):
+    """
+    Plot two cones separated by a distance `thickness`.
+
+    Parameters: same as plot_cone, plus `thickness`.
+    """
+    base_pos_1, base_pos_2 = geometry.thick_cone_base_positions(height, radius, thickness, rot_x, rot_y, base_pos)
+    plot_cone(height, radius, rot_x=rot_x, rot_y=rot_y, base_pos=base_pos_1, **kwargs)
+    kwargs.pop('color', None)
+    fig = plot_cone(height, radius, rot_x=rot_x, rot_y=rot_y, base_pos=base_pos_2, color='blue', **kwargs)
     return fig
