@@ -51,7 +51,8 @@ setup(
         'pptk',
         'symfit',
         'tqdm',
-        'h5py'
+        'h5py',
+        'dataclasses;python_version<"3.7"',
     ],
     setup_requires=[
         # dependency for `python setup.py test`

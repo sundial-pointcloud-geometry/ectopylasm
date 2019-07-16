@@ -7,3 +7,4 @@ pptk
 symfit
 tqdm
 h5py
+dataclasses ; python_version < '3.7'

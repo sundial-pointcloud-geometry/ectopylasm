@@ -5,6 +5,8 @@ import sympy as sy
 import tqdm
 
 import logging
+import dataclasses
+import typing
 
 logger = logging.getLogger('ectopylasm.geometry')
 logger.setLevel(logging.INFO)
@@ -114,16 +116,61 @@ def filter_points_plane(points_xyz, plane_point, plane_normal, plane_thickness, 
     return p_filtered
 
 
-def cone_surface(height, radius, rot_x=2 * np.pi, rot_y=2 * np.pi,
-                 base_pos=(0, 0, 0), n_steps=20):
+@dataclasses.dataclass(frozen=True)
+class Point(object):
+    """A three dimensional point with x, y and z components."""
+
+    x: float
+    y: float
+    z: float
+
+    def to_array(self):
+        """Convert to a NumPy array `np.array((x, y, z))`."""
+        return np.array((self.x, self.y, self.z))
+
+
+@dataclasses.dataclass(frozen=True)
+class Cone(object):
+    """
+    A cone.
+
+    The cone is defined mainly by its `height` and `radius`. When the other
+    parameters are left at their default values, this will produce a cone with
+    its axis along the z-axis and the center of its circular base at position
+    (x, y, z) = (0, 0, 0).
+
+    Three optional parameters define its location and orientation: two rotation
+    parameters `rot_x` and `rot_y`, giving respectively rotations around the x
+    and y axes (the x rotation is performed first, then the y rotation) and one
+    translation parameter called `base_pos`, which itself is a `Point` object,
+    and which moves the position of the circular base of the cone.
+    """
+
+    height: float
+    radius: float
+    rot_x: float = dataclasses.field(default=2 * np.pi, metadata={'unit': 'radians'})
+    rot_y: float = dataclasses.field(default=2 * np.pi, metadata={'unit': 'radians'})
+    base_pos: Point = Point(0, 0, 0)
+
+    def axis(self):
+        """Get the cone's axis unit vector from its rotation angles (radians)."""
+        # z-unit vector (0, 0, 1) rotated twice
+        cone_axis = (0, -np.sin(self.rot_x), np.cos(self.rot_x))  # rotation around x-axis
+        cone_axis = np.array((-np.sin(self.rot_y) * cone_axis[2],
+                              cone_axis[1],
+                              np.cos(self.rot_y) * cone_axis[2]))  # around y
+        return cone_axis
+
+    def apex_position(self):
+        """Get cone apex position from cone parameters."""
+        return self.base_pos.to_array() + self.axis() * self.height
+
+
+def cone_surface(cone: Cone, n_steps=20):
     """
     Calculate coordinates of the surface of a cone.
 
-    height: height along the cone's central axis
-    radius: radius of the circle
-    rot_x: rotation angle about the x axis (radians)
-    rot_y: rotation angle about the y axis (radians)
-    base_pos: translation of base of cone to this position, iterable of three numbers
+    cone: a Cone object
     n_steps: number of steps in the parametric range used for drawing (more gives a
              smoother surface, but may render more slowly)
     """
@@ -133,41 +180,31 @@ def cone_surface(height, radius, rot_x=2 * np.pi, rot_y=2 * np.pi,
     z_eqn = u
 
     x_rot_x = x_eqn
-    y_rot_x = y_eqn * sy.cos(rot_x) - z_eqn * sy.sin(rot_x)
-    z_rot_x = y_eqn * sy.sin(rot_x) + z_eqn * sy.cos(rot_x)
+    y_rot_x = y_eqn * sy.cos(cone.rot_x) - z_eqn * sy.sin(cone.rot_x)
+    z_rot_x = y_eqn * sy.sin(cone.rot_x) + z_eqn * sy.cos(cone.rot_x)
 
-    x_rot_y = x_rot_x * sy.cos(rot_y) - z_rot_x * sy.sin(rot_y) + base_pos[0]
-    y_rot_y = y_rot_x + base_pos[1]
-    z_rot_y = x_rot_x * sy.sin(rot_y) + z_rot_x * sy.cos(rot_y) + base_pos[2]
+    x_rot_y = x_rot_x * sy.cos(cone.rot_y) - z_rot_x * sy.sin(cone.rot_y) + cone.base_pos.x
+    y_rot_y = y_rot_x + cone.base_pos.x
+    z_rot_y = x_rot_x * sy.sin(cone.rot_y) + z_rot_x * sy.cos(cone.rot_y) + cone.base_pos.z
 
     # get box limits in two dimensions
-    u_steps = np.linspace(0, height, n_steps)
+    u_steps = np.linspace(0, cone.height, n_steps)
     theta_steps = np.linspace(0, 2 * np.pi, n_steps)
     u_array, theta_array = np.meshgrid(u_steps, theta_steps)
 
     # find corresponding y coordinates
     x, y, z = [], [], []
     for ui, thetai in zip(u_array.flatten(), theta_array.flatten()):
-        x.append(float(x_rot_y.evalf(subs={h: height, r: radius, u: ui, theta: thetai})))
-        y.append(float(y_rot_y.evalf(subs={h: height, r: radius, u: ui, theta: thetai})))
-        z.append(float(z_rot_y.evalf(subs={h: height, r: radius, u: ui, theta: thetai})))
+        x.append(float(x_rot_y.evalf(subs={h: cone.height, r: cone.radius, u: ui, theta: thetai})))
+        y.append(float(y_rot_y.evalf(subs={h: cone.height, r: cone.radius, u: ui, theta: thetai})))
+        z.append(float(z_rot_y.evalf(subs={h: cone.height, r: cone.radius, u: ui, theta: thetai})))
 
     return (np.array(x).reshape(u_array.shape),
             np.array(y).reshape(u_array.shape),
             np.array(z).reshape(u_array.shape))
 
 
-def cone_axis_from_rotation(rot_x, rot_y):
-    """Get the cone's axis unit vector from its rotation angles (radians)."""
-    # z-unit vector (0, 0, 1) rotated twice
-    cone_axis = (0, -np.sin(rot_x), np.cos(rot_x))  # rotation around x-axis
-    cone_axis = np.array((-np.sin(rot_y) * cone_axis[2],
-                          cone_axis[1],
-                          np.cos(rot_y) * cone_axis[2]))  # around y
-    return cone_axis
-
-
-def thick_cone_base_positions(height, radius, thickness, rot_x, rot_y, base_pos):
+def thick_cone_base_positions(cone: Cone, thickness):
     """
     Convert cone base position to two thick cone base positions.
 
@@ -175,35 +212,37 @@ def thick_cone_base_positions(height, radius, thickness, rot_x, rot_y, base_pos)
     that are a certain distance apart, such that the distance between the
     cone surfaces (the directrices) is `thickness` apart.
 
-    height: height along the cone's central axis
-    radius: radius of the circle
+    cone: a Cone object
     thickness: distance between the two cone surfaces (i.e. their directrices)
-    rot_x: rotation angle about the x axis (radians)
-    rot_y: rotation angle about the y axis (radians)
-    base_pos: translation of base of cone to this position, iterable of three numbers
     """
     thickness = abs(thickness)
-    base_distance = thickness / radius * height * np.sqrt(1 + radius**2 / height**2)  # trigonometry
+    # trigonometry:
+    base_distance = thickness / cone.radius * cone.height * np.sqrt(1 + cone.radius**2 / cone.height**2)
 
-    cone_axis = cone_axis_from_rotation(rot_x, rot_y)
+    cone_axis = cone.axis()
 
-    base_pos_1 = np.array(base_pos) - cone_axis * 0.5 * base_distance
-    base_pos_2 = np.array(base_pos) + cone_axis * 0.5 * base_distance
+    base_pos_1 = cone.base_pos.to_array() - cone_axis * 0.5 * base_distance
+    base_pos_2 = cone.base_pos.to_array() + cone_axis * 0.5 * base_distance
 
     return base_pos_1, base_pos_2
 
 
-def cone_apex_position(height, rot_x=2 * np.pi, rot_y=2 * np.pi, base_pos=(0, 0, 0)):
+def thick_cone_cones(cone: Cone, thickness) -> typing.Tuple[Cone, Cone]:
     """
-    Get cone apex position from cone parameters.
+    Convert one Cone to two cones separated by `thickness`.
 
-    height: height along the cone's central axis
-    rot_x: rotation angle about the x axis (radians)
-    rot_y: rotation angle about the y axis (radians)
-    base_pos: translation of base of cone to this position, iterable of three numbers
+    Given the cone parameters, return two cones, such that the distance between
+    the cone surfaces (the directrices) is `thickness` apart.
+
+    cone: a Cone object
+    thickness: distance between the two cone surfaces (i.e. their directrices)
     """
-    cone_axis = cone_axis_from_rotation(rot_x, rot_y)
-    return np.array(base_pos) + cone_axis * height
+    base_pos_1, base_pos_2 = thick_cone_base_positions(cone, thickness)
+    cone_1 = Cone(cone.height, cone.radius, rot_x=cone.rot_x,
+                  rot_y=cone.rot_y, base_pos=Point(*base_pos_1))
+    cone_2 = Cone(cone.height, cone.radius, rot_x=cone.rot_x,
+                  rot_y=cone.rot_y, base_pos=Point(*base_pos_2))
+    return cone_1, cone_2
 
 
 def cone_opening_angle(height, radius):
@@ -211,9 +250,7 @@ def cone_opening_angle(height, radius):
     return np.arctan(radius / height)
 
 
-def point_distance_to_cone(point, height, radius,
-                           rot_x=2 * np.pi, rot_y=2 * np.pi, base_pos=(0, 0, 0),
-                           return_extra=False):
+def point_distance_to_cone(point, cone: Cone, return_extra=False):
     """
     Get distance of point to cone.
 
@@ -232,18 +269,18 @@ def point_distance_to_cone(point, height, radius,
     Extra values can be returned to be reused outside the function by
     setting return_extra to True.
     """
-    cone_axis = cone_axis_from_rotation(rot_x, rot_y)
-    apex_pos = cone_apex_position(height, rot_x=rot_x, rot_y=rot_y, base_pos=base_pos)
+    cone_axis = cone.axis()
+    apex_pos = cone.apex_position()
     point_apex_vec = np.array(point) - apex_pos
     point_apex_angle = np.pi - angle_between_two_vectors(cone_axis, point_apex_vec)
-    opening_angle = cone_opening_angle(height, radius)
+    opening_angle = cone_opening_angle(cone.height, cone.radius)
 
     # for the second conditional, we need the length of the component of the
     # difference vector between P and apex along the closest generatrix
     point_apex_generatrix_angle = point_apex_angle - opening_angle
     point_apex_distance = np.sqrt(np.sum(point_apex_vec**2))
     point_apex_generatrix_component = point_apex_distance * np.cos(point_apex_generatrix_angle)
-    generatrix_length = np.sqrt(radius**2 + height**2)
+    generatrix_length = np.sqrt(cone.radius**2 + cone.height**2)
 
     returnees = {}
     if return_extra:
@@ -264,29 +301,20 @@ def point_distance_to_cone(point, height, radius,
         return point_apex_distance * np.sin(point_apex_generatrix_angle), True, returnees
 
 
-def filter_points_cone(points_xyz, height, radius, thickness,
-                       rot_x=2 * np.pi, rot_y=2 * np.pi, base_pos=(0, 0, 0)):
+def filter_points_cone(points_xyz, cone: Cone, thickness):
     """
     Select the points that are within the thick cone.
 
     points_xyz: a vector of shape (3, N) representing N points in 3D space
-    height: height along the cone's central axis
-    radius: radius of the circle
+    cone: a Cone object
     thickness: distance between the two cone surfaces (i.e. their directrices)
-    rot_x: rotation angle about the x axis (radians)
-    rot_y: rotation angle about the y axis (radians)
-    base_pos: translation of base of cone to this position, iterable of three numbers
     """
-    base_pos_1, base_pos_2 = thick_cone_base_positions(height, radius, thickness, rot_x, rot_y, base_pos)
+    cone_1, cone_2 = thick_cone_cones(cone, thickness)
 
     p_filtered = []
     for p_i in tqdm.tqdm(points_xyz.T):
-        d_cone1, flag_cone1, vals1 = point_distance_to_cone(p_i, height, radius,
-                                                            rot_x=rot_x, rot_y=rot_y,
-                                                            base_pos=base_pos_1, return_extra=True)
-        d_cone2, flag_cone2, _ = point_distance_to_cone(p_i, height, radius,
-                                                        rot_x=rot_x, rot_y=rot_y,
-                                                        base_pos=base_pos_2, return_extra=True)
+        d_cone1, flag_cone1, vals1 = point_distance_to_cone(p_i, cone_1, return_extra=True)
+        d_cone2, flag_cone2, _ = point_distance_to_cone(p_i, cone_2, return_extra=True)
         if flag_cone2 is False or flag_cone1 is None:
             # it is definitely outside of the cones' range
             logger.debug(f"case 1: {p_i} was ignored")
