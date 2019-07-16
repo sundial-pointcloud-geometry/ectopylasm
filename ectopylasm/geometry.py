@@ -165,6 +165,10 @@ class Cone(object):
         """Get cone apex position from cone parameters."""
         return self.base_pos.to_array() + self.axis() * self.height
 
+    def opening_angle(self):
+        """Twice the opening angle is the maximum angle between directrices."""
+        return np.arctan(self.radius / self.height)
+
 
 def cone_surface(cone: Cone, n_steps=20):
     """
@@ -245,11 +249,6 @@ def thick_cone_cones(cone: Cone, thickness) -> typing.Tuple[Cone, Cone]:
     return cone_1, cone_2
 
 
-def cone_opening_angle(height, radius):
-    """Twice the opening angle is the maximum angle between directrices."""
-    return np.arctan(radius / height)
-
-
 def point_distance_to_cone(point, cone: Cone, return_extra=False):
     """
     Get distance of point to cone.
@@ -273,7 +272,7 @@ def point_distance_to_cone(point, cone: Cone, return_extra=False):
     apex_pos = cone.apex_position()
     point_apex_vec = np.array(point) - apex_pos
     point_apex_angle = np.pi - angle_between_two_vectors(cone_axis, point_apex_vec)
-    opening_angle = cone_opening_angle(cone.height, cone.radius)
+    opening_angle = cone.opening_angle()
 
     # for the second conditional, we need the length of the component of the
     # difference vector between P and apex along the closest generatrix
