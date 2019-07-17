@@ -111,34 +111,26 @@ def plot_plane_fit(fit_result, **kwargs):
     return fig
 
 
-def plot_cone(height, radius, rot_x=2 * np.pi, rot_y=2 * np.pi, base_pos=(0, 0, 0), n_steps=20, **kwargs):
+def plot_cone(cone: geometry.Cone, n_steps=20, **kwargs):
     """
     Draw a cone surface.
 
-    height: height along the cone's central axis
-    radius: radius of the circle
-    rot_x: rotation angle about the x axis (radians)
-    rot_y: rotation angle about the y axis (radians)
-    base_pos: translation of base of cone to this position, iterable of three numbers
+    cone: a Cone object
     n_steps: number of steps in the parametric range used for drawing (more gives a
              smoother surface, but may render more slowly)
     """
-    fig = ipv.plot_surface(*geometry.cone_surface(height, radius, rot_x=rot_x, rot_y=rot_y,
-                                                  base_pos=base_pos, n_steps=n_steps),
-                           **kwargs)
+    fig = ipv.plot_surface(*geometry.cone_surface(cone, n_steps=n_steps), **kwargs)
     return fig
 
 
-def plot_thick_cone(height, radius, thickness,
-                    rot_x=2 * np.pi, rot_y=2 * np.pi, base_pos=(0, 0, 0),
-                    **kwargs):
+def plot_thick_cone(cone: geometry.Cone, thickness, **kwargs):
     """
     Plot two cones separated by a distance `thickness`.
 
     Parameters: same as plot_cone, plus `thickness`.
     """
-    base_pos_1, base_pos_2 = geometry.thick_cone_base_positions(height, radius, thickness, rot_x, rot_y, base_pos)
-    plot_cone(height, radius, rot_x=rot_x, rot_y=rot_y, base_pos=base_pos_1, **kwargs)
+    cone_1, cone_2 = geometry.thick_cone_cones(cone, thickness)
+    plot_cone(cone_1, **kwargs)
     kwargs.pop('color', None)
-    fig = plot_cone(height, radius, rot_x=rot_x, rot_y=rot_y, base_pos=base_pos_2, color='blue', **kwargs)
+    fig = plot_cone(cone_2, color='blue', **kwargs)
     return fig
