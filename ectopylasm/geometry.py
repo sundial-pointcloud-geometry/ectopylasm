@@ -90,6 +90,32 @@ def plane_point_from_d(n, d):
         return (-d / n[0], 0, 0)
 
 
+def plane_d(point, normal):
+    """Calculate d factor in plane equation ax + by + cz + d = 0."""
+    return -(point[0] * normal[0] + point[1] * normal[1] + point[2] * normal[2])
+
+
+def point_distance_to_plane(point, plane_point, plane_normal, d=None):
+    """
+    Get signed distance of point to plane.
+
+    The sign of the resulting distance tells you whether the point is in
+    the same or the opposite direction of the plane normal vector.
+
+    point: an iterable of length 3 representing a point in 3D space
+    plane_point: a point in the plane
+    plane_normal: the normal vector to the plane (x, y, z; any iterable)
+    d [optional]: the constant in the plane equation ax + by + cz + d = 0; if
+                  specified, `plane_point` will be ignored
+    """
+    if d is None:
+        d = plane_d(plane_point, plane_normal)
+
+    a, b, c = plane_normal
+    # from http://mathworld.wolfram.com/Point-PlaneDistance.html
+    return (a * point[0] + b * point[1] + c * point[2] + d) / np.sqrt(a**2 + b**2 + c**2)
+
+
 def filter_points_plane(points_xyz, plane_point, plane_normal, plane_thickness, d=None):
     """
     Select the points that are within the thick plane.
@@ -104,14 +130,15 @@ def filter_points_plane(points_xyz, plane_point, plane_normal, plane_thickness, 
     """
     if d is not None:
         plane_point = plane_point_from_d(plane_normal, d)
-    point1, point2 = thick_plane_points(plane_point, plane_normal, plane_thickness)
-    plane1 = sy.geometry.Plane(sy.geometry.Point3D(point1), normal_vector=plane_normal)
-    plane2 = sy.geometry.Plane(sy.geometry.Point3D(point2), normal_vector=plane_normal)
+    plane_point_1, plane_point_2 = thick_plane_points(plane_point, plane_normal, plane_thickness)
+    d1 = plane_d(plane_point_1, plane_normal)
+    d2 = plane_d(plane_point_2, plane_normal)
 
     p_filtered = []
-    for p_i in tqdm.tqdm(points_xyz.T):
-        sy_point_i = sy.geometry.Point3D(tuple(p_i))
-        if plane1.distance(sy_point_i) <= plane_thickness and plane2.distance(sy_point_i) <= plane_thickness:
+    for p_i in points_xyz.T:
+        distance_1 = point_distance_to_plane(p_i, None, plane_normal, d=d1)
+        distance_2 = point_distance_to_plane(p_i, None, plane_normal, d=d2)
+        if abs(distance_1) <= plane_thickness and abs(distance_2) <= plane_thickness:
             p_filtered.append(p_i)
     return p_filtered
 
