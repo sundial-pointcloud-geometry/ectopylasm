@@ -56,7 +56,7 @@ def pptk_plot_df(df, **kwargs):
     pptk.viewer(np.array([df['x'], df['y'], df['z']]).T, **kwargs)
 
 
-def plot_plane(p, n, x_lim=None, z_lim=None, d=None):
+def plot_plane(p, n, x_lim=None, z_lim=None, d=None, **kwargs):
     """
     Draw a plane.
 
@@ -75,7 +75,7 @@ def plot_plane(p, n, x_lim=None, z_lim=None, d=None):
         x_lim = ipv.pylab.gcf().xlim
     if z_lim is None:
         z_lim = ipv.pylab.gcf().zlim
-    fig = ipv.plot_surface(*geometry.plane_surface(p, n, x_lim, z_lim, d=d))
+    fig = ipv.plot_surface(*geometry.plane_surface(p, n, x_lim, z_lim, d=d), **kwargs)
     return fig
 
 
