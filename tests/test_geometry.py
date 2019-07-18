@@ -5,7 +5,7 @@ from ectopylasm import geometry
 import pytest
 
 
-@pytest.mark.parametrize('d', [None, 1])
+@pytest.mark.parametrize('d', [None, -1])
 def test_plane_surface(d):
     """Test geometry.plane_surface."""
     p = (1, 1, 1)
@@ -16,7 +16,20 @@ def test_plane_surface(d):
 
     x, y, z = geometry.plane_surface(p, n, x_lim, z_lim, d=d)
 
-    print(x, y, z)
+    assert np.all(x == np.array([[-1, 1], [-1, 1]]))
+    assert np.all(y == np.array([[1., 1.], [1., 1.]]))
+    assert np.all(z == np.array([[-1, -1], [1, 1]]))
+
+
+def test_filter_points_plane():
+    """Test geometry.filter_points_plane."""
+    xyz = np.array([[0, 0.61, 0],   # just above
+                    [0, 0.39, 0],   # just below
+                    [0, 0.5, 0],    # right in the middle
+                    ]).T
+
+    p_filtered = geometry.filter_points_plane(xyz, (0.5, 0.5, 0.5), (0, 1, 0), 0.2)
+    assert np.all(np.array(p_filtered) == np.array([[0, 0.5, 0]]))
 
 
 def test_filter_points_cone():
@@ -31,5 +44,4 @@ def test_filter_points_cone():
 
     cone = geometry.Cone(0.5, 0.5)
     p_filtered = geometry.filter_points_cone(xyz, cone, 0.2)
-    print(p_filtered)
     assert np.all(np.array(p_filtered) == np.array([[0, 0, 0.5]]))
