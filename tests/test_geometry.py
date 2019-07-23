@@ -32,6 +32,19 @@ def test_filter_points_plane():
     assert np.all(np.array(p_filtered) == np.array([[0, 0.5, 0]]))
 
 
+def test_thick_plane_points():
+    """Test thick_plane_points."""
+    p1, p2 = geometry.thick_plane_points((0.5, 0.5, 0.5), (0, 0, 1), 0.2)
+    assert np.allclose(p1, (0.5, 0.5, 0.6))
+    assert np.allclose(p2, (0.5, 0.5, 0.4))
+
+
+def test_point_distance_to_plane():
+    """Test point_distance_to_plane."""
+    d = geometry.point_distance_to_plane((1, 4, 4), (0.5, 0.5, 0.5), (0, 0, 1))
+    assert np.isclose(d, 3.5)
+
+
 def test_filter_points_cone():
     """Test geometry.filter_points_cone."""
     xyz = np.array([[0, 0, 0.5],     # inside blue, above red ("case 2")
