@@ -7,9 +7,10 @@ import tqdm
 import logging
 import dataclasses
 import typing
+import enum
 
 logger = logging.getLogger('ectopylasm.geometry')
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 def normalize_vector(n):
@@ -252,10 +253,10 @@ def thick_cone_base_positions(cone: Cone, thickness):
 
     cone_axis = cone.axis()
 
-    base_pos_1 = cone.base_pos.to_array() - cone_axis * 0.5 * base_distance
-    base_pos_2 = cone.base_pos.to_array() + cone_axis * 0.5 * base_distance
+    base_pos_bottom = cone.base_pos.to_array() - cone_axis * 0.5 * base_distance
+    base_pos_top = cone.base_pos.to_array() + cone_axis * 0.5 * base_distance
 
-    return base_pos_1, base_pos_2
+    return base_pos_bottom, base_pos_top
 
 
 def thick_cone_cones(cone: Cone, thickness) -> typing.Tuple[Cone, Cone]:
@@ -268,12 +269,34 @@ def thick_cone_cones(cone: Cone, thickness) -> typing.Tuple[Cone, Cone]:
     cone: a Cone object
     thickness: distance between the two cone surfaces (i.e. their directrices)
     """
-    base_pos_1, base_pos_2 = thick_cone_base_positions(cone, thickness)
-    cone_1 = Cone(cone.height, cone.radius, rot_x=cone.rot_x,
-                  rot_y=cone.rot_y, base_pos=Point(*base_pos_1))
-    cone_2 = Cone(cone.height, cone.radius, rot_x=cone.rot_x,
-                  rot_y=cone.rot_y, base_pos=Point(*base_pos_2))
-    return cone_1, cone_2
+    base_pos_bottom, base_pos_top = thick_cone_base_positions(cone, thickness)
+    cone_bottom = Cone(cone.height, cone.radius, rot_x=cone.rot_x,
+                       rot_y=cone.rot_y, base_pos=Point(*base_pos_bottom))
+    cone_top = Cone(cone.height, cone.radius, rot_x=cone.rot_x,
+                    rot_y=cone.rot_y, base_pos=Point(*base_pos_top))
+    return cone_bottom, cone_top
+
+
+class ConeRegion(enum.Enum):
+    """
+    Class defining three regions in and around cones.
+
+    These regions are used in point_distance_to_cone to pass on information
+    about which kind of region the point is in. This can be used in other
+    functions (like filter_points_cone).
+
+    The three options are:
+    - perpendicular: the point is at a location where its shortest distance to
+                     the cone surface is perpendicular to that surface
+    - above_apex: the point is somewhere above the apex of the cone, but not
+                  perpendicular to the surface
+    - below_directrix: the point is not perpendicular to the surface and it is
+                       below the directrix
+    """
+
+    perpendicular = enum. auto()
+    above_apex = enum.auto()
+    below_directrix = enum.auto()
 
 
 def point_distance_to_cone(point, cone: Cone, return_extra=False):
@@ -315,16 +338,16 @@ def point_distance_to_cone(point, cone: Cone, return_extra=False):
 
     if point_apex_angle > opening_angle + np.pi / 2:
         # "above" the apex
-        return point_apex_distance, False, returnees
+        return point_apex_distance, ConeRegion.above_apex, returnees
     elif point_apex_generatrix_component > generatrix_length:
         # "below" the directrix
         # use cosine rule to find length of third side
         return np.sqrt(point_apex_distance**2 + generatrix_length**2
                        - 2 * point_apex_distance * generatrix_length
-                       * np.cos(point_apex_generatrix_angle)), None, returnees
+                       * np.cos(point_apex_generatrix_angle)), ConeRegion.below_directrix, returnees
     else:
         # "perpendicular" to a generatrix
-        return point_apex_distance * np.sin(point_apex_generatrix_angle), True, returnees
+        return point_apex_distance * np.sin(point_apex_generatrix_angle), ConeRegion.perpendicular, returnees
 
 
 def filter_points_cone(points_xyz, cone: Cone, thickness):
@@ -335,27 +358,27 @@ def filter_points_cone(points_xyz, cone: Cone, thickness):
     cone: a Cone object
     thickness: distance between the two cone surfaces (i.e. their directrices)
     """
-    cone_1, cone_2 = thick_cone_cones(cone, thickness)
+    cone_bottom, cone_top = thick_cone_cones(cone, thickness)
 
     p_filtered = []
     for p_i in tqdm.tqdm(points_xyz.T):
-        d_cone1, flag_cone1, vals1 = point_distance_to_cone(p_i, cone_1, return_extra=True)
-        d_cone2, flag_cone2, _ = point_distance_to_cone(p_i, cone_2, return_extra=True)
-        if flag_cone2 is False or flag_cone1 is None:
+        d_cone_bottom, flag_cone_bottom, vals_bottom = point_distance_to_cone(p_i, cone_bottom, return_extra=True)
+        d_cone_top, flag_cone_top, _ = point_distance_to_cone(p_i, cone_top, return_extra=True)
+        if flag_cone_top is ConeRegion.above_apex or flag_cone_bottom is ConeRegion.below_directrix:
             # it is definitely outside of the cones' range
             logger.debug(f"case 1: {p_i} was ignored")
             pass
-        elif flag_cone1 is False:
+        elif flag_cone_bottom is ConeRegion.above_apex:
             # the first condition is logically enclosed in the second, but the
             # first is faster and already covers a large part of the cases/volume:
-            if abs(d_cone1) <= thickness or \
-               abs(d_cone1) <= thickness / np.cos(vals1['point_apex_angle'] - vals1['opening_angle'] - np.pi / 2):
+            if abs(d_cone_bottom) <= thickness or \
+               abs(d_cone_bottom) <= thickness / np.cos(vals_bottom['point_apex_angle'] - vals_bottom['opening_angle'] - np.pi / 2):
                 p_filtered.append(p_i)
                 logger.debug(f"case 2: {p_i} was added")
             else:
                 logger.debug(f"case 3: {p_i} was ignored")
                 pass
-        elif abs(d_cone1) <= thickness and abs(d_cone2) <= thickness:
+        elif abs(d_cone_bottom) <= thickness and abs(d_cone_top) <= thickness:
             p_filtered.append(p_i)
             logger.debug(f"case 4: {p_i} was added")
         else:
