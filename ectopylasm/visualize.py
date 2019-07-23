@@ -26,13 +26,13 @@ def random_sample(xyz, total, sample_frac):
     return dict(x=xyz['x'][sample], y=xyz['y'][sample], z=xyz['z'][sample])
 
 
-def ipv_plot_plydata(plydata, sample_frac=1, shape='circle2d', **kwargs):
+def ipv_plot_plydata(plydata, sample_frac=1, marker='circle_2d', **kwargs):
     """Plot vertices in a plydata object using ipyvolume."""
     if sample_frac < 1:
         xyz = random_sample(plydata['vertex'], plydata['vertex'].count, sample_frac)
     else:
         xyz = dict(x=plydata['vertex']['x'], y=plydata['vertex']['y'], z=plydata['vertex']['z'])
-    fig = ipv.scatter(**xyz, shape=shape, **kwargs)
+    fig = ipv.scatter(**xyz, marker=marker, **kwargs)
     return fig
 
 
