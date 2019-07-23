@@ -19,8 +19,14 @@ def normalize_vector(vector):
 
 
 def angle_between_two_vectors(a, b):
-    """Calculate the angle in radians between two vectors `a` and `b`."""
-    return np.arccos(np.sum(a * b) / np.sqrt(np.sum(a**2)) / np.sqrt(np.sum(b**2)))
+    """
+    Calculate the angle in radians between two vectors `a` and `b`.
+
+    Implementation credits to https://stackoverflow.com/a/13849249/1199693.
+    """
+    a_n = normalize_vector(a)
+    b_n = normalize_vector(b)
+    return np.arccos(np.clip(np.dot(a_n, b_n), -1.0, 1.0))
 
 
 def plane_surface(p, n, x_lim, z_lim, d=None):

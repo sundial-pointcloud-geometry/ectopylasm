@@ -100,3 +100,15 @@ def test_normalize_vector(v, expected):
     """Test normalize_vector."""
     n = geometry.normalize_vector(v)
     assert np.allclose(n, expected)
+
+
+@pytest.mark.parametrize('a,b,expected', [
+    (np.array((1, 0, 0)), np.array((0, 1, 0)), np.pi / 2),
+    (np.array((1, 0, 0)), np.array((1, 0, 0)), 0),
+    (np.array((1, 0, 0)), np.array((-1, 0, 0)), np.pi),
+    (np.array((1., 1., 1.)), np.array((1., 1., 1.)), 0),
+])
+def test_angle_between_two_vectors(a, b, expected):
+    """Test angle_between_two_vectors."""
+    angle = geometry.angle_between_two_vectors(a, b)
+    assert np.allclose(angle, expected)
