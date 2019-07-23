@@ -13,11 +13,9 @@ logger = logging.getLogger('ectopylasm.geometry')
 logger.setLevel(logging.INFO)
 
 
-def normalize_vector(n):
-    """Input vector `n` divided by its absolute size yields a vector of size 1."""
-    n_size = n[0] * n[0] + n[1] * n[1] + n[2] * n[2]
-    n = (n[0] / n_size, n[1] / n_size, n[2] / n_size)
-    return n
+def normalize_vector(vector):
+    """Input `vector` divided by its absolute size yields a vector of size 1."""
+    return vector / np.linalg.norm(vector)
 
 
 def angle_between_two_vectors(a, b):

@@ -88,3 +88,15 @@ def test_point_distance_to_cone(point, expected_distance, expected_flag):
     distance, flag, _ = geometry.point_distance_to_cone(point, cone)
     assert np.isclose(distance, expected_distance)
     assert flag == expected_flag
+
+
+@pytest.mark.parametrize('v,expected', [
+    ((0, 3, 3), (0, 1 / np.sqrt(2), 1 / np.sqrt(2))),
+    ((5, 0, 0), (1, 0, 0)),
+    ((1, 1, 1), (1 / np.sqrt(3), 1 / np.sqrt(3), 1 / np.sqrt(3))),
+    ((-1, 0, 0), (-1, 0, 0)),
+])
+def test_normalize_vector(v, expected):
+    """Test normalize_vector."""
+    n = geometry.normalize_vector(v)
+    assert np.allclose(n, expected)
