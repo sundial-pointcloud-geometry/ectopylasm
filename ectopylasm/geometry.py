@@ -10,7 +10,7 @@ import typing
 import enum
 
 logger = logging.getLogger('ectopylasm.geometry')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 def normalize_vector(n):
