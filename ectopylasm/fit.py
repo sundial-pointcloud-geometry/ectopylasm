@@ -1,6 +1,9 @@
 """Fitting of point cloud data to geometrical shapes."""
 import numpy as np
 import symfit as sf
+import scipy.optimize as opt
+
+from ectopylasm import geometry
 
 
 def fit_plane(xyz):
@@ -30,3 +33,21 @@ def fit_plane(xyz):
     plane_fit_result = plane_fit.execute()
 
     return plane_fit_result
+
+
+def fit_cone(xyz):
+    """
+    Fit a cone to the point coordinates in xyz.
+
+    Dev note: this fit is implemented with scipy instead of symfit. See
+    https://github.com/tBuLi/symfit/issues/263 for the problem with using
+    symfit for this one.
+    """
+    def loss_function(parameters, xyz):
+        cone = geometry.Cone(*parameters[:4], base_pos=geometry.Point(*parameters[4:]))
+        distances = np.array([geometry.point_distance_to_cone(point, cone)[0] for point in xyz.T])
+        return np.sum(distances**2)
+
+    result = opt.minimize(loss_function, (0.5, 0.5, 0, 0, 0, 0, 0), args=(xyz,))
+
+    return result

@@ -128,3 +128,10 @@ def plot_thick_cone(cone: geometry.Cone, thickness, **kwargs):
     kwargs.pop('color', None)
     fig = plot_cone(cone_2, color='blue', **kwargs)
     return fig
+
+
+def plot_cone_fit(fit_result, **kwargs):
+    """Plot the cone resulting from a cone fit to a point set."""
+    cone = geometry.Cone(*fit_result['x'][:4], base_pos=geometry.Point(*fit_result['x'][4:]))
+    fig = plot_cone(cone, **kwargs)
+    return fig
