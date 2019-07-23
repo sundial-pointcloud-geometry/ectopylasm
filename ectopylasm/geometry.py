@@ -29,125 +29,6 @@ def angle_between_two_vectors(a, b):
     return np.arccos(np.clip(np.dot(a_n, b_n), -1.0, 1.0))
 
 
-def plane_surface(p, n, x_lim, z_lim, d=None):
-    """
-    Get plane surface coordinates.
-
-    Calculate coordinates of the part of a plane inside a cubical box. The
-    limited coordinates are called x and z, corresponding to the first and
-    third components of `p` and `n`. The final y coordinate is calculated
-    based on the equation for a plane.
-
-    p: a point in the plane (x, y, z; any iterable)
-    n: the normal vector to the plane (x, y, z; any iterable)
-    x_lim: iterable of the two extrema in the x direction
-    z_lim: same as x, but for z
-    d [optional]: if d is known (in-product of p and n), then this can be
-                  supplied directly; p is disregarded in this case.
-    """
-    n = normalize_vector(n)
-
-    if d is None:
-        d = -(n[0] * p[0] + n[1] * p[1] + n[2] * p[2])
-
-    # get box limits in two dimensions
-    x, z = np.meshgrid(x_lim, z_lim)
-
-    # find corresponding y coordinates
-    y = -(n[0] * x + n[2] * z + d) / n[1]
-    return x, y, z
-
-
-def thick_plane_points(p, n, thickness):
-    """
-    Convert plane point to two thick plane points.
-
-    Given a point, a normal vector and a thickness, return two points
-    along the normal that are `thickness` apart.
-    """
-    n = normalize_vector(n)
-
-    p1 = (p[0] + 0.5 * thickness * n[0],
-          p[1] + 0.5 * thickness * n[1],
-          p[2] + 0.5 * thickness * n[2])
-    p2 = (p[0] - 0.5 * thickness * n[0],
-          p[1] - 0.5 * thickness * n[1],
-          p[2] - 0.5 * thickness * n[2])
-    return p1, p2
-
-
-def plane_point_from_d(n, d):
-    """
-    Generate a point in a plane.
-
-    Calculate a point in the plane based on d at x,y=0,0 (could be
-    anywhere); -cz = ax + by + d. If c happens to be zero, try x,z=0,0, and
-    if b is zero as well, do y,z=0,0.
-
-    n: the normal vector to the plane (x, y, z; any iterable)
-    d: the constant in the plane equation ax + by + cz + d = 0
-    """
-    if n[2] != 0:
-        return (0, 0, -d / n[2])
-    elif n[1] != 0:
-        return (0, -d / n[1], 0)
-    else:
-        return (-d / n[0], 0, 0)
-
-
-def plane_d(point, normal):
-    """Calculate d factor in plane equation ax + by + cz + d = 0."""
-    return -(point[0] * normal[0] + point[1] * normal[1] + point[2] * normal[2])
-
-
-def point_distance_to_plane(point, plane_point, plane_normal, d=None):
-    """
-    Get signed distance of point to plane.
-
-    The sign of the resulting distance tells you whether the point is in
-    the same or the opposite direction of the plane normal vector.
-
-    point: an iterable of length 3 representing a point in 3D space
-    plane_point: a point in the plane
-    plane_normal: the normal vector to the plane (x, y, z; any iterable)
-    d [optional]: the constant in the plane equation ax + by + cz + d = 0; if
-                  specified, `plane_point` will be ignored
-    """
-    if d is None:
-        d = plane_d(plane_point, plane_normal)
-
-    a, b, c = plane_normal
-    # from http://mathworld.wolfram.com/Point-PlaneDistance.html
-    return (a * point[0] + b * point[1] + c * point[2] + d) / np.sqrt(a**2 + b**2 + c**2)
-
-
-def filter_points_plane(points_xyz, plane_point, plane_normal, plane_thickness, d=None):
-    """
-    Select the points that are within the thick plane.
-
-    points_xyz: a vector of shape (3, N) representing N points in 3D space
-    plane_point: a point in the plane
-    plane_normal: the normal vector to the plane (x, y, z; any iterable)
-    plane_thickness: the thickness of the plane (the distance between the two
-                     composing planes)
-    d [optional]: the constant in the plane equation ax + by + cz + d = 0; if
-                  specified, `plane_point` will be ignored
-    """
-    if d is not None:
-        plane_point = plane_point_from_d(plane_normal, d)
-    plane_point_1, plane_point_2 = thick_plane_points(plane_point, plane_normal, plane_thickness)
-    d1 = plane_d(plane_point_1, plane_normal)
-    d2 = plane_d(plane_point_2, plane_normal)
-
-    p_filtered = []
-    for p_i in points_xyz.T:
-        distance_1 = point_distance_to_plane(p_i, None, plane_normal, d=d1)
-        distance_2 = point_distance_to_plane(p_i, None, plane_normal, d=d2)
-        if abs(distance_1) <= plane_thickness and abs(distance_2) <= plane_thickness:
-            p_filtered.append(p_i)
-    return p_filtered
-
-
 @dataclasses.dataclass(frozen=True)
 class Point(object):
     """A three dimensional point with x, y and z components."""
@@ -159,6 +40,151 @@ class Point(object):
     def to_array(self):
         """Convert to a NumPy array `np.array((x, y, z))`."""
         return np.array((self.x, self.y, self.z))
+
+
+@dataclasses.dataclass(frozen=True)
+class Plane(object):
+    """
+    A plane.
+
+    The plane is defined by four parameters, a, b, c and d, which form the
+    plane equation a*x + b*y + c*z + d = 0. Points (x, y, z) for which this
+    equation applies are points on the plane.
+
+    On creation, the input parameters a, b and c are normalized. When seen
+    as a vector n = (a, b, c), n is the normal vector to the plane,
+    indicating its direction. This vector is normalized to have length one.
+
+    The fourth parameter d relates to the position of the plane in space. It
+    can be calculated from a known point in the plane (X, Y, Z) as
+    d = -a*X - b*Y - c*Z, but can also be given directly.
+    """
+
+    a: float
+    b: float
+    c: float
+    d: float
+
+    def __init__(self, a, b, c, d):
+        """
+        Construct the plane, taking the four plane parameters as input.
+
+        Normalizes a, b and c so that the vector n = (a, b, c) has length 1.
+        """
+        a, b, c = normalize_vector((a, b, c))
+        object.__setattr__(self, 'a', a)
+        object.__setattr__(self, 'b', b)
+        object.__setattr__(self, 'c', c)
+        object.__setattr__(self, 'd', d)
+
+    @staticmethod
+    def d(point, normal):
+        """Calculate d factor in plane equation ax + by + cz + d = 0."""
+        return -(point[0] * normal[0] + point[1] * normal[1] + point[2] * normal[2])
+
+    @classmethod
+    def from_point(cls, a, b, c, point):
+        """Plane constructor that uses a point on the plane as input instead of d."""
+        a, b, c = normalize_vector((a, b, c))
+        return cls(a, b, c, cls.d(point, (a, b, c)))
+
+    def generate_point(self):
+        """
+        Generate a point in the plane.
+
+        Calculate a point in the plane based on d at x,y=0,0 (could be
+        anywhere); -cz = ax + by + d. If c happens to be zero, try x,z=0,0, and
+        if b is zero as well, do y,z=0,0.
+        """
+        if self.c != 0:
+            return (0, 0, -self.d / self.c)
+        elif self.b != 0:
+            return (0, -self.d / self.b, 0)
+        else:
+            return (-self.d / self.a, 0, 0)
+
+
+def plane_surface(plane: Plane, x_lim, z_lim):
+    """
+    Get plane surface coordinates.
+
+    Calculate coordinates of the part of a plane inside a cubical box. The
+    limited coordinates are called x and z, corresponding to the first and
+    third components of `p` and `n`. The final y coordinate is calculated
+    based on the equation for a plane.
+
+    plane: a Plane object
+    x_lim: iterable of the two extrema in the x direction
+    z_lim: same as x, but for z
+    """
+    # get box limits in two dimensions
+    x, z = np.meshgrid(x_lim, z_lim)
+
+    # find corresponding y coordinates
+    y = -(plane.a * x + plane.c * z + plane.d) / plane.b
+    return x, y, z
+
+
+def thick_plane_points(plane: Plane, thickness, plane_point=None):
+    """
+    Convert plane point to two thick plane points.
+
+    Given a Plane and a thickness, return two points along the normal that
+    are `thickness` apart. Optionally specify a specific point in the plane.
+    """
+    if plane_point is None:
+        plane_point = plane.generate_point()
+
+    p1 = (plane_point[0] + 0.5 * thickness * plane.a,
+          plane_point[1] + 0.5 * thickness * plane.b,
+          plane_point[2] + 0.5 * thickness * plane.c)
+    p2 = (plane_point[0] - 0.5 * thickness * plane.a,
+          plane_point[1] - 0.5 * thickness * plane.b,
+          plane_point[2] - 0.5 * thickness * plane.c)
+    return p1, p2
+
+
+def thick_plane_planes(plane: Plane, thickness):
+    """Convert plane to two planes separated by thickness."""
+    plane_point_1, plane_point_2 = thick_plane_points(plane, thickness)
+    plane_1 = Plane.from_point(plane.a, plane.b, plane.c, plane_point_1)
+    plane_2 = Plane.from_point(plane.a, plane.b, plane.c, plane_point_2)
+    return plane_1, plane_2
+
+
+def point_distance_to_plane(point, plane: Plane):
+    """
+    Get signed distance of point to plane.
+
+    The sign of the resulting distance tells you whether the point is in
+    the same or the opposite direction of the plane normal vector.
+
+    point: an iterable of length 3 representing a point in 3D space
+    plane: a Plane object
+    """
+    # from http://mathworld.wolfram.com/Point-PlaneDistance.html
+    # N.B.: no need to divide by ||(a,b,c)||, since that is always 1
+    return (plane.a * point[0] + plane.b * point[1] + plane.c * point[2] + plane.d)
+
+
+def filter_points_plane(points_xyz, plane: Plane, plane_thickness):
+    """
+    Select the points that are within the thick plane.
+
+    points_xyz: a vector of shape (3, N) representing N points in 3D space
+    plane: a Plane object
+    plane_thickness: the thickness of the plane (the distance between the two
+                     composing planes)
+    """
+    plane_1, plane_2 = thick_plane_planes(plane, plane_thickness)
+
+    p_filtered = []
+    for p_i in points_xyz.T:
+        distance_1 = point_distance_to_plane(p_i, plane_1)
+        distance_2 = point_distance_to_plane(p_i, plane_2)
+        if abs(distance_1) <= plane_thickness and abs(distance_2) <= plane_thickness:
+            p_filtered.append(p_i)
+    return p_filtered
 
 
 @dataclasses.dataclass(frozen=True)

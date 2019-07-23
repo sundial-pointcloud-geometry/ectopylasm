@@ -56,7 +56,7 @@ def pptk_plot_df(df, **kwargs):
     pptk.viewer(np.array([df['x'], df['y'], df['z']]).T, **kwargs)
 
 
-def plot_plane(p, n, x_lim=None, z_lim=None, d=None, **kwargs):
+def plot_plane(plane: geometry.Plane, x_lim=None, z_lim=None, **kwargs):
     """
     Draw a plane.
 
@@ -64,27 +64,23 @@ def plot_plane(p, n, x_lim=None, z_lim=None, d=None, **kwargs):
     third components of `p` and `n`. The final y coordinate is calculated
     based on the equation for a plane.
 
-    p: a point in the plane (x, y, z; any iterable)
-    n: the normal vector to the plane (x, y, z; any iterable)
+    plane: a Plane object
     x_lim [optional]: iterable of the two extrema in the x direction
     z_lim [optional]: same as x, but for z
-    d [optional]: if d is known (in-product of p and n), then this can be
-                  supplied directly; p is disregarded in this case.
     """
     if x_lim is None:
         x_lim = ipv.pylab.gcf().xlim
     if z_lim is None:
         z_lim = ipv.pylab.gcf().zlim
-    fig = ipv.plot_surface(*geometry.plane_surface(p, n, x_lim, z_lim, d=d), **kwargs)
+    fig = ipv.plot_surface(*geometry.plane_surface(plane, x_lim, z_lim), **kwargs)
     return fig
 
 
-def plot_thick_plane(p, n, thickness=0, d=None, **kwargs):
+def plot_thick_plane(plane: geometry.Plane, thickness=0, d=None, **kwargs):
     """
     Draw two co-planar planes, separated by a distance `thickness`.
 
-    p: a point in the plane (x, y, z; any iterable)
-    n: the normal vector to the plane (x, y, z; any iterable)
+    plane: a central Plane object
     thickness: the distance between the two co-planar planes
     x_lim [optional]: iterable of the two extrema in the x direction
     z_lim [optional]: same as x, but for z
@@ -92,22 +88,20 @@ def plot_thick_plane(p, n, thickness=0, d=None, **kwargs):
                   supplied directly; p is disregarded in this case.
     """
     if thickness <= 0:
-        fig = plot_plane(p, n, d=d, **kwargs)
+        fig = plot_plane(plane, **kwargs)
     else:
-        if d is not None:
-            p = geometry.plane_point_from_d(n, d)
-        # find points in the two planes and plot them
-        p1, p2 = geometry.thick_plane_points(p, n, thickness)
+        p1, p2 = geometry.thick_plane_planes(plane, thickness)
 
-        plot_plane(p1, n, d=d, **kwargs)
-        fig = plot_plane(p2, n, d=d, **kwargs)
+        plot_plane(p1, **kwargs)
+        fig = plot_plane(p2, **kwargs)
     return fig
 
 
 def plot_plane_fit(fit_result, **kwargs):
     """Plot the plane resulting from a plane fit to a point set."""
     p_fit = fit_result.params
-    fig = plot_plane(None, (p_fit['a'], p_fit['b'], p_fit['c']), d=p_fit['d'], **kwargs)
+    plane = geometry.Plane(p_fit['a'], p_fit['b'], p_fit['c'], p_fit['d'])
+    fig = plot_plane(plane, **kwargs)
     return fig
 
 

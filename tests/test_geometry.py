@@ -8,13 +8,12 @@ import pytest
 @pytest.mark.parametrize('d', [None, -1])
 def test_plane_surface(d):
     """Test geometry.plane_surface."""
-    p = (1, 1, 1)
-    n = (0, 1, 0)
+    plane = geometry.Plane.from_point(0, 1, 0, (1, 1, 1))
 
     x_lim = (-1, 1)
     z_lim = (-1, 1)
 
-    x, y, z = geometry.plane_surface(p, n, x_lim, z_lim, d=d)
+    x, y, z = geometry.plane_surface(plane, x_lim, z_lim)
 
     assert np.all(x == np.array([[-1, 1], [-1, 1]]))
     assert np.all(y == np.array([[1., 1.], [1., 1.]]))
@@ -23,26 +22,31 @@ def test_plane_surface(d):
 
 def test_filter_points_plane():
     """Test geometry.filter_points_plane."""
+    plane = geometry.Plane.from_point(0, 1, 0, (0.5, 0.5, 0.5))
+
     xyz = np.array([[0, 0.61, 0],   # just above
                     [0, 0.39, 0],   # just below
                     [0, 0.5, 0],    # right in the middle
                     ]).T
 
-    p_filtered = geometry.filter_points_plane(xyz, (0.5, 0.5, 0.5), (0, 1, 0), 0.2)
+    p_filtered = geometry.filter_points_plane(xyz, plane, 0.2)
+    print(p_filtered)
     assert np.all(np.array(p_filtered) == np.array([[0, 0.5, 0]]))
 
 
 def test_thick_plane_points():
     """Test thick_plane_points."""
-    p1, p2 = geometry.thick_plane_points((0.5, 0.5, 0.5), (0, 0, 1), 0.2)
+    plane = geometry.Plane.from_point(0, 0, 1, (0.5, 0.5, 0.5))
+    p1, p2 = geometry.thick_plane_points(plane, 0.2, plane_point=(0.5, 0.5, 0.5))
     assert np.allclose(p1, (0.5, 0.5, 0.6))
     assert np.allclose(p2, (0.5, 0.5, 0.4))
 
 
 def test_point_distance_to_plane():
     """Test point_distance_to_plane."""
-    d = geometry.point_distance_to_plane((1, 4, 4), (0.5, 0.5, 0.5), (0, 0, 1))
-    assert np.isclose(d, 3.5)
+    plane = geometry.Plane.from_point(0, 0, 1, (0.5, 0.5, 0.5))
+    distance = geometry.point_distance_to_plane((1, 4, 4), plane)
+    assert np.isclose(distance, 3.5)
 
 
 def test_filter_points_cone():
