@@ -13,6 +13,10 @@ Tools for visualizing and fitting pointcloud data.
 .. image:: https://mybinder.org/badge_logo.svg
  :target: https://mybinder.org/v2/gh/sundial-pointcloud-geometry/ectopylasm/master?filepath=notebooks%2FSundial%20surface.ipynb
 
+.. image:: https://readthedocs.org/projects/ectopylasm/badge/?version=latest
+ :target: https://ectopylasm.readthedocs.io/en/latest/?badge=latest
+ :alt: Documentation Status
+
 Installation
 ************
 
