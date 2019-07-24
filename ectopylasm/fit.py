@@ -35,7 +35,7 @@ def fit_plane(xyz):
     return plane_fit_result
 
 
-def fit_cone(xyz):
+def fit_cone(xyz, initial_guess_cone: geometry.Cone = None):
     """
     Fit a cone to the point coordinates in xyz.
 
@@ -48,6 +48,15 @@ def fit_cone(xyz):
         distances = np.array([geometry.point_distance_to_cone(point, cone)[0] for point in xyz.T])
         return np.sum(distances**2)
 
-    result = opt.minimize(loss_function, (0.5, 0.5, 0, 0, 0, 0, 0), args=(xyz,))
+    if initial_guess_cone is None:
+        initial_guess = (1, 1, 0, 0, 0, 0, 0),
+    else:
+        initial_guess = (initial_guess_cone.height, initial_guess_cone.radius,
+                         initial_guess_cone.rot_x, initial_guess_cone.rot_y,
+                         initial_guess_cone.base_pos.x,
+                         initial_guess_cone.base_pos.y,
+                         initial_guess_cone.base_pos.z)
+
+    result = opt.minimize(loss_function, initial_guess, args=(xyz,))
 
     return result
