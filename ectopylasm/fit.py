@@ -24,7 +24,7 @@ def fit_plane(xyz):
     """
     a, b, c, d = sf.parameters('a, b, c, d')
     x, y, z, f = sf.variables('x, y, z, f')
-    plane_model = {f: x * a + y * b + z * c - d}
+    plane_model = {f: x * a + y * b + z * c + d}
 
     plane_fit = sf.Fit(plane_model, x=xyz[0], y=xyz[1], z=xyz[2],
                        f=np.zeros_like(xyz[0]),
