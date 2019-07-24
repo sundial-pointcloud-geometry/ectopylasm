@@ -4,6 +4,9 @@ import numpy as np
 import sympy as sy
 import tqdm
 
+import scipy.optimize as opt
+import symfit as sf
+
 import logging
 import dataclasses
 import typing
@@ -87,6 +90,21 @@ class Plane(object):
         """Plane constructor that uses a point on the plane as input instead of d."""
         a, b, c = normalize_vector((a, b, c))
         return cls(a, b, c, cls.d(point, (a, b, c)))
+
+    @classmethod
+    def from_fit_result(cls, fit_result):
+        """Generate a Plane from `fit_result`, the output of `fit.fit_plane`."""
+        return cls(fit_result.params['a'], fit_result.params['b'],
+                   fit_result.params['c'], fit_result.params['d'])
+
+    @classmethod
+    def from_points(cls, points):
+        """
+        Generate a Plane by fitting to a set of points.
+
+        The set of N point coordinates with shape (3, N) is given by `points`.
+        """
+        return cls.from_fit_result(fit_plane(points))
 
     def generate_point(self):
         """
@@ -226,6 +244,20 @@ class Cone(object):
     def opening_angle(self):
         """Twice the opening angle is the maximum angle between directrices."""
         return np.arctan(self.radius / self.height)
+
+    @classmethod
+    def from_fit_result(cls, fit_result):
+        """Generate a Cone from `fit_result`, the output of `fit.fit_cone`."""
+        return cls(*fit_result['x'][:4], base_pos=Point(*fit_result['x'][4:]))
+
+    @classmethod
+    def from_points(cls, points, **kwargs):
+        """
+        Generate a Cone by fitting to a set of points.
+
+        The set of N point coordinates with shape (3, N) is given by `points`.
+        """
+        return cls.from_fit_result(fit_cone(points, **kwargs))
 
 
 def cone_surface(cone: Cone, n_steps=20):
@@ -414,3 +446,61 @@ def filter_points_cone(points_xyz, cone: Cone, thickness):
         else:
             logger.debug(f"case 5: {p_i} was ignored")
     return p_filtered
+
+
+# Fitting
+
+def fit_plane(xyz):
+    """
+    Fit a plane to the point coordinates in xyz.
+
+    Dev note: An alternative implementation is possible that omits the `f`
+    variable, and thus has one fewer degree of freedom. This means the fit is
+    easier and maybe more precise. This could be tested. The notebook
+    req4.1_fit_plane.ipynb in the explore repository
+    (https://github.com/sundial-pointcloud-geometry/explore) has some notes on
+    this. The problem with those models where f is just zero and the named
+    symfit model is created for one of x, y or z instead is that you have to
+    divide by one of the a, b or c parameters respectively. If one of these
+    turns out to be zero, symfit will not find a fit. A solution would be
+    to actually create three models and try another if one of them fails to
+    converge.
+    """
+    a, b, c, d = sf.parameters('a, b, c, d')
+    x, y, z, f = sf.variables('x, y, z, f')
+    plane_model = {f: x * a + y * b + z * c + d}
+
+    plane_fit = sf.Fit(plane_model, x=xyz[0], y=xyz[1], z=xyz[2],
+                       f=np.zeros_like(xyz[0]),
+                       constraints=[sf.Equality(a**2 + b**2 + c**2, 1)])
+
+    plane_fit_result = plane_fit.execute()
+
+    return plane_fit_result
+
+
+def fit_cone(xyz, initial_guess_cone: Cone = None):
+    """
+    Fit a cone to the point coordinates in xyz.
+
+    Dev note: this fit is implemented with scipy instead of symfit. See
+    https://github.com/tBuLi/symfit/issues/263 for the problem with using
+    symfit for this one.
+    """
+    def loss_function(parameters, xyz):
+        cone = Cone(*parameters[:4], base_pos=Point(*parameters[4:]))
+        distances = np.array([point_distance_to_cone(point, cone)[0] for point in xyz.T])
+        return np.sum(distances**2)
+
+    if initial_guess_cone is None:
+        initial_guess = (1, 1, 0, 0, 0, 0, 0),
+    else:
+        initial_guess = (initial_guess_cone.height, initial_guess_cone.radius,
+                         initial_guess_cone.rot_x, initial_guess_cone.rot_y,
+                         initial_guess_cone.base_pos.x,
+                         initial_guess_cone.base_pos.y,
+                         initial_guess_cone.base_pos.z)
+
+    result = opt.minimize(loss_function, initial_guess, args=(xyz,))
+
+    return result
