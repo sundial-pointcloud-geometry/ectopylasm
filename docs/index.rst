@@ -1,8 +1,3 @@
-.. ectopylasm documentation master file, created by
-   sphinx-quickstart on Thu Jun 21 11:07:11 2018.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 Welcome to ectopylasm's documentation!
 ==========================================================
 
@@ -11,10 +6,19 @@ Welcome to ectopylasm's documentation!
    :caption: Contents:
 
 
+Package Contents
+================
+* :doc:`Input and output <io>`
+* :doc:`Visualization <visualize>`
+* :doc:`Geometrical shapes <geometry>`
+* :doc:`Fitting to geometrical shapes <fit>`
+
 
 Indices and tables
 ==================
-
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+
+.. include:: ../README.rst
