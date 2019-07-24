@@ -1,0 +1,14 @@
+name: ectopylasm
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - ipyvolume
+  - jupyterlab
+  - pandas
+  - vaex-core
+  - tqdm
+  - pip
+  - pip:
+    - pptk
+    - symfit

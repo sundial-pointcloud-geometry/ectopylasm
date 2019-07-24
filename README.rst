@@ -10,6 +10,8 @@ Tools for visualizing and fitting pointcloud data.
 .. image:: https://codecov.io/gh/sundial-pointcloud-geometry/ectopylasm/branch/master/graph/badge.svg
   :target: https://codecov.io/gh/sundial-pointcloud-geometry/ectopylasm
 
+.. image:: https://mybinder.org/badge_logo.svg
+ :target: https://mybinder.org/v2/gh/sundial-pointcloud-geometry/ectopylas/master?filepath=notebooks%2FSundial%20surface.ipynb
 
 Installation
 ************
