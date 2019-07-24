@@ -246,7 +246,7 @@ def cone_surface(cone: Cone, n_steps=20):
     z_rot_x = y_eqn * sy.sin(cone.rot_x) + z_eqn * sy.cos(cone.rot_x)
 
     x_rot_y = x_rot_x * sy.cos(cone.rot_y) - z_rot_x * sy.sin(cone.rot_y) + cone.base_pos.x
-    y_rot_y = y_rot_x + cone.base_pos.x
+    y_rot_y = y_rot_x + cone.base_pos.y
     z_rot_y = x_rot_x * sy.sin(cone.rot_y) + z_rot_x * sy.cos(cone.rot_y) + cone.base_pos.z
 
     # get box limits in two dimensions
