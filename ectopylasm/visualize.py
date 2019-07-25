@@ -1,16 +1,16 @@
 """Visualization of point cloud data and geometrical shapes."""
 
-import numpy as np
 import logging
 
+import numpy as np
 import ipyvolume as ipv
 import pptk
 
 from ectopylasm import geometry
 
 
-logger = logging.getLogger('ectopylasm.visualize')
-logger.setLevel(logging.INFO)
+LOGGER = logging.getLogger('ectopylasm.visualize')
+LOGGER.setLevel(logging.INFO)
 
 
 def random_sample(xyz, total, sample_frac):
@@ -21,8 +21,9 @@ def random_sample(xyz, total, sample_frac):
     total: number of points in xyz
     sample_frac: fraction of the total set that you want to return
     """
-    sample = np.random.choice(total, int(sample_frac * total), replace=False)
-    logger.debug("sample size:", int(sample_frac * total), "out of total", total)
+    sample_size = int(sample_frac * total)
+    sample = np.random.choice(total, sample_size, replace=False)
+    LOGGER.debug("sample size: %i out of total %i", sample_size, total)
     return dict(x=xyz['x'][sample], y=xyz['y'][sample], z=xyz['z'][sample])
 
 
@@ -38,22 +39,23 @@ def ipv_plot_plydata(plydata, sample_frac=1, marker='circle_2d', **kwargs):
 
 def pptk_plot_plydata(plydata, **kwargs):
     """Plot vertices in a plydata object using pptk."""
-    pptk.viewer(np.array([plydata['vertex']['x'], plydata['vertex']['y'], plydata['vertex']['z']]).T, **kwargs)
+    pptk.viewer(np.array([plydata['vertex']['x'], plydata['vertex']['y'],
+                          plydata['vertex']['z']]).T, **kwargs)
 
 
-def ipv_plot_df(df, sample_frac=1, marker='circle_2d', **kwargs):
+def ipv_plot_df(points_df, sample_frac=1, marker='circle_2d', **kwargs):
     """Plot vertices in a dataframe using ipyvolume."""
     if sample_frac < 1:
-        xyz = random_sample(df, len(df), sample_frac)
+        xyz = random_sample(points_df, len(points_df), sample_frac)
     else:
-        xyz = dict(x=df['x'].values, y=df['y'].values, z=df['z'].values)
+        xyz = dict(x=points_df['x'].values, y=points_df['y'].values, z=points_df['z'].values)
     fig = ipv.scatter(**xyz, marker=marker, **kwargs)
     return fig
 
 
-def pptk_plot_df(df, **kwargs):
+def pptk_plot_df(points_df, **kwargs):
     """Plot vertices in a dataframe using pptk."""
-    pptk.viewer(np.array([df['x'], df['y'], df['z']]).T, **kwargs)
+    pptk.viewer(np.array([points_df['x'], points_df['y'], points_df['z']]).T, **kwargs)
 
 
 def plot_plane(plane: geometry.Plane, x_lim=None, z_lim=None, **kwargs):
@@ -76,7 +78,7 @@ def plot_plane(plane: geometry.Plane, x_lim=None, z_lim=None, **kwargs):
     return fig
 
 
-def plot_thick_plane(plane: geometry.Plane, thickness=0, d=None, **kwargs):
+def plot_thick_plane(plane: geometry.Plane, thickness=0, **kwargs):
     """
     Draw two co-planar planes, separated by a distance `thickness`.
 
@@ -90,10 +92,10 @@ def plot_thick_plane(plane: geometry.Plane, thickness=0, d=None, **kwargs):
     if thickness <= 0:
         fig = plot_plane(plane, **kwargs)
     else:
-        p1, p2 = geometry.thick_plane_planes(plane, thickness)
+        plane_1, plane_2 = geometry.thick_plane_planes(plane, thickness)
 
-        plot_plane(p1, **kwargs)
-        fig = plot_plane(p2, **kwargs)
+        plot_plane(plane_1, **kwargs)
+        fig = plot_plane(plane_2, **kwargs)
     return fig
 
 

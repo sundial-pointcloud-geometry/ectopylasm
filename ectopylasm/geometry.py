@@ -1,5 +1,10 @@
 """Calculations on shapes and vectors."""
 
+import logging
+import dataclasses
+import typing
+import enum
+
 import numpy as np
 import sympy as sy
 import tqdm
@@ -7,13 +12,8 @@ import tqdm
 import scipy.optimize as opt
 import symfit as sf
 
-import logging
-import dataclasses
-import typing
-import enum
-
-logger = logging.getLogger('ectopylasm.geometry')
-logger.setLevel(logging.INFO)
+LOGGER = logging.getLogger('ectopylasm.geometry')
+LOGGER.setLevel(logging.INFO)
 
 
 def normalize_vector(vector):
@@ -33,7 +33,7 @@ def angle_between_two_vectors(a, b):
 
 
 @dataclasses.dataclass(frozen=True)
-class Point(object):
+class Point:
     """A three dimensional point with x, y and z components."""
 
     x: float
@@ -46,7 +46,7 @@ class Point(object):
 
 
 @dataclasses.dataclass(frozen=True)
-class Plane(object):
+class Plane:
     """
     A plane.
 
@@ -81,7 +81,7 @@ class Plane(object):
         object.__setattr__(self, 'd', d)
 
     @staticmethod
-    def d(point, normal):
+    def d_from_point(point, normal):
         """Calculate d factor in plane equation ax + by + cz + d = 0."""
         return -(point[0] * normal[0] + point[1] * normal[1] + point[2] * normal[2])
 
@@ -89,7 +89,7 @@ class Plane(object):
     def from_point(cls, a, b, c, point):
         """Plane constructor that uses a point on the plane as input instead of d."""
         a, b, c = normalize_vector((a, b, c))
-        return cls(a, b, c, cls.d(point, (a, b, c)))
+        return cls(a, b, c, cls.d_from_point(point, (a, b, c)))
 
     @classmethod
     def from_fit_result(cls, fit_result):
@@ -153,13 +153,13 @@ def thick_plane_points(plane: Plane, thickness, plane_point=None):
     if plane_point is None:
         plane_point = plane.generate_point()
 
-    p1 = (plane_point[0] + 0.5 * thickness * plane.a,
-          plane_point[1] + 0.5 * thickness * plane.b,
-          plane_point[2] + 0.5 * thickness * plane.c)
-    p2 = (plane_point[0] - 0.5 * thickness * plane.a,
-          plane_point[1] - 0.5 * thickness * plane.b,
-          plane_point[2] - 0.5 * thickness * plane.c)
-    return p1, p2
+    point_1 = (plane_point[0] + 0.5 * thickness * plane.a,
+               plane_point[1] + 0.5 * thickness * plane.b,
+               plane_point[2] + 0.5 * thickness * plane.c)
+    point_2 = (plane_point[0] - 0.5 * thickness * plane.a,
+               plane_point[1] - 0.5 * thickness * plane.b,
+               plane_point[2] - 0.5 * thickness * plane.c)
+    return point_1, point_2
 
 
 def thick_plane_planes(plane: Plane, thickness):
@@ -182,7 +182,7 @@ def point_distance_to_plane(point, plane: Plane):
     """
     # from http://mathworld.wolfram.com/Point-PlaneDistance.html
     # N.B.: no need to divide by ||(a,b,c)||, since that is always 1
-    return (plane.a * point[0] + plane.b * point[1] + plane.c * point[2] + plane.d)
+    return plane.a * point[0] + plane.b * point[1] + plane.c * point[2] + plane.d
 
 
 def filter_points_plane(points_xyz, plane: Plane, plane_thickness):
@@ -206,7 +206,7 @@ def filter_points_plane(points_xyz, plane: Plane, plane_thickness):
 
 
 @dataclasses.dataclass(frozen=True)
-class Cone(object):
+class Cone:
     """
     A cone.
 
@@ -232,7 +232,7 @@ class Cone(object):
         """Get the cone's axis unit vector from its rotation angles (radians)."""
         # z-unit vector (0, 0, 1) rotated twice
         cone_axis = (0, -np.sin(self.rot_x), np.cos(self.rot_x))  # rotation around x-axis
-        cone_axis = np.array((-np.sin(self.rot_y) * cone_axis[2],
+        cone_axis = np.array((np.sin(self.rot_y) * cone_axis[2],
                               cone_axis[1],
                               np.cos(self.rot_y) * cone_axis[2]))  # around y
         return cone_axis
@@ -260,6 +260,35 @@ class Cone(object):
         return cls.from_fit_result(fit_cone(points, **kwargs))
 
 
+def cone_sympy_model(cone: Cone):
+    """
+    Convert `cone` to a sympy based cone model.
+
+    Returns the model (first return value) and a dictionary with constituent
+    symbols.
+    """
+    height, radius, u_param, theta_param = sy.symbols('height, radius, u_param, theta_param')
+
+    # column vector for the non-rotated, non-translated parameterized cone surface equation
+    cone_eqn = sy.Matrix([(height - u_param) / height * radius * sy.cos(theta_param),
+                          (height - u_param) / height * radius * sy.sin(theta_param),
+                          u_param])
+    base_pos_vec = sy.Matrix([cone.base_pos.x, cone.base_pos.y, cone.base_pos.z])
+
+    # rotation matrices R_x and R_y
+    r_x = sy.Matrix([[1, 0, 0],
+                     [0, sy.cos(cone.rot_x), -sy.sin(cone.rot_x)],
+                     [0, sy.sin(cone.rot_x), sy.cos(cone.rot_x)]])
+
+    r_y = sy.Matrix([[sy.cos(cone.rot_y), 0, sy.sin(cone.rot_y)],
+                     [0, 1, 0],
+                     [-sy.sin(cone.rot_y), 0, sy.cos(cone.rot_y)]])
+
+    cone_rot_trans = r_y @ (r_x @ cone_eqn) + base_pos_vec
+    return cone_rot_trans, {'height': height, 'radius': radius, 'u_param': u_param,
+                            'theta_param': theta_param}
+
+
 def cone_surface(cone: Cone, n_steps=20):
     """
     Calculate coordinates of the surface of a cone.
@@ -268,18 +297,7 @@ def cone_surface(cone: Cone, n_steps=20):
     n_steps: number of steps in the parametric range used for drawing (more gives a
              smoother surface, but may render more slowly)
     """
-    h, r, u, theta = sy.symbols('h, r, u, theta')
-    x_eqn = (h - u) / h * r * sy.cos(theta)
-    y_eqn = (h - u) / h * r * sy.sin(theta)
-    z_eqn = u
-
-    x_rot_x = x_eqn
-    y_rot_x = y_eqn * sy.cos(cone.rot_x) - z_eqn * sy.sin(cone.rot_x)
-    z_rot_x = y_eqn * sy.sin(cone.rot_x) + z_eqn * sy.cos(cone.rot_x)
-
-    x_rot_y = x_rot_x * sy.cos(cone.rot_y) - z_rot_x * sy.sin(cone.rot_y) + cone.base_pos.x
-    y_rot_y = y_rot_x + cone.base_pos.y
-    z_rot_y = x_rot_x * sy.sin(cone.rot_y) + z_rot_x * sy.cos(cone.rot_y) + cone.base_pos.z
+    cone_model, cone_symbols = cone_sympy_model(cone)
 
     # get box limits in two dimensions
     u_steps = np.linspace(0, cone.height, n_steps)
@@ -288,10 +306,13 @@ def cone_surface(cone: Cone, n_steps=20):
 
     # find corresponding y coordinates
     x, y, z = [], [], []
-    for ui, thetai in zip(u_array.flatten(), theta_array.flatten()):
-        x.append(float(x_rot_y.evalf(subs={h: cone.height, r: cone.radius, u: ui, theta: thetai})))
-        y.append(float(y_rot_y.evalf(subs={h: cone.height, r: cone.radius, u: ui, theta: thetai})))
-        z.append(float(z_rot_y.evalf(subs={h: cone.height, r: cone.radius, u: ui, theta: thetai})))
+    for u_i, theta_i in zip(u_array.flatten(), theta_array.flatten()):
+        subs = {cone_symbols['height']: cone.height, cone_symbols['radius']: cone.radius,
+                cone_symbols['u_param']: u_i, cone_symbols['theta_param']: theta_i}
+        xyz = np.array(cone_model.evalf(subs=subs).tolist()).astype(np.float64)
+        x.append(xyz[0])
+        y.append(xyz[1])
+        z.append(xyz[2])
 
     return (np.array(x).reshape(u_array.shape),
             np.array(y).reshape(u_array.shape),
@@ -311,7 +332,8 @@ def thick_cone_base_positions(cone: Cone, thickness):
     """
     thickness = abs(thickness)
     # trigonometry:
-    base_distance = thickness / cone.radius * cone.height * np.sqrt(1 + cone.radius**2 / cone.height**2)
+    base_distance = (thickness / cone.radius * cone.height
+                     * np.sqrt(1 + cone.radius**2 / cone.height**2))
 
     cone_axis = cone.axis()
 
@@ -404,12 +426,14 @@ def point_distance_to_cone(point, cone: Cone, return_extra=False):
     elif point_apex_generatrix_component > generatrix_length:
         # "below" the directrix
         # use cosine rule to find length of third side
-        return np.sqrt(point_apex_distance**2 + generatrix_length**2
-                       - 2 * point_apex_distance * generatrix_length
-                       * np.cos(point_apex_generatrix_angle)), ConeRegion.below_directrix, returnees
+        return (np.sqrt(point_apex_distance**2 + generatrix_length**2
+                        - 2 * point_apex_distance * generatrix_length
+                        * np.cos(point_apex_generatrix_angle)),
+                ConeRegion.below_directrix, returnees)
     else:
         # "perpendicular" to a generatrix
-        return point_apex_distance * np.sin(point_apex_generatrix_angle), ConeRegion.perpendicular, returnees
+        return (point_apex_distance * np.sin(point_apex_generatrix_angle),
+                ConeRegion.perpendicular, returnees)
 
 
 def filter_points_cone(points_xyz, cone: Cone, thickness):
@@ -424,27 +448,27 @@ def filter_points_cone(points_xyz, cone: Cone, thickness):
 
     p_filtered = []
     for p_i in tqdm.tqdm(points_xyz.T):
-        d_cone_bottom, flag_cone_bottom, vals_bottom = point_distance_to_cone(p_i, cone_bottom, return_extra=True)
+        d_cone_bottom, flag_cone_bottom, vals_bottom = point_distance_to_cone(p_i, cone_bottom,
+                                                                              return_extra=True)
         d_cone_top, flag_cone_top, _ = point_distance_to_cone(p_i, cone_top, return_extra=True)
         if flag_cone_top is ConeRegion.above_apex or flag_cone_bottom is ConeRegion.below_directrix:
             # it is definitely outside of the cones' range
-            logger.debug(f"case 1: {p_i} was ignored")
-            pass
+            LOGGER.debug("case 1: %s was ignored", p_i)
         elif flag_cone_bottom is ConeRegion.above_apex:
             # the first condition is logically enclosed in the second, but the
             # first is faster and already covers a large part of the cases/volume:
             if abs(d_cone_bottom) <= thickness or \
-               abs(d_cone_bottom) <= thickness / np.cos(vals_bottom['point_apex_angle'] - vals_bottom['opening_angle'] - np.pi / 2):
+               abs(d_cone_bottom) <= (thickness / np.cos(vals_bottom['point_apex_angle']
+                                      - vals_bottom['opening_angle'] - np.pi / 2)):
                 p_filtered.append(p_i)
-                logger.debug(f"case 2: {p_i} was added")
+                LOGGER.debug("case 2: %s was added", p_i)
             else:
-                logger.debug(f"case 3: {p_i} was ignored")
-                pass
+                LOGGER.debug("case 3: %s was ignored", p_i)
         elif abs(d_cone_bottom) <= thickness and abs(d_cone_top) <= thickness:
             p_filtered.append(p_i)
-            logger.debug(f"case 4: {p_i} was added")
+            LOGGER.debug("case 4: %s was added", p_i)
         else:
-            logger.debug(f"case 5: {p_i} was ignored")
+            LOGGER.debug("case 5: %s was ignored", p_i)
     return p_filtered
 
 
@@ -472,7 +496,7 @@ def fit_plane(xyz):
 
     plane_fit = sf.Fit(plane_model, x=xyz[0], y=xyz[1], z=xyz[2],
                        f=np.zeros_like(xyz[0]),
-                       constraints=[sf.Equality(a**2 + b**2 + c**2, 1)])
+                       constraints=[sf.Equality(a**2 + b**2 + c**2, 1)])  # keep plane normal a unit vector
 
     plane_fit_result = plane_fit.execute()
 
@@ -493,7 +517,7 @@ def fit_cone(xyz, initial_guess_cone: Cone = None):
         return np.sum(distances**2)
 
     if initial_guess_cone is None:
-        initial_guess = (1, 1, 0, 0, 0, 0, 0),
+        initial_guess = (1, 1, 0, 0, 0, 0, 0)
     else:
         initial_guess = (initial_guess_cone.height, initial_guess_cone.radius,
                          initial_guess_cone.rot_x, initial_guess_cone.rot_y,

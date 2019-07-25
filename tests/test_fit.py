@@ -75,23 +75,36 @@ def test_fit_cone_initial_guess(cone_fit_result):
     """Test fit_cone with an initial guess parameter."""
     fit_result = cone_fit_result
 
-    assert np.isclose(fit_result['x'][0], 0.5069517)
-    assert np.isclose(fit_result['x'][1], 0.50695155)
-    assert np.isclose(fit_result['x'][2], 3.00000021)
-    assert np.isclose(fit_result['x'][3], 1.00000017)
-    assert np.isclose(fit_result['x'][4], 7.99420898)
-    assert np.isclose(fit_result['x'][5], 10.00098104)
-    assert np.isclose(fit_result['x'][6], -47.99628163)
+    assert np.isclose(fit_result['x'][0], 0.5028964554822218)
+    assert np.isclose(fit_result['x'][1], 0.5028961773781943)
+    assert np.isclose(fit_result['x'][2], 2.999999870748047)
+    assert np.isclose(fit_result['x'][3], 0.9999999251772242)
+    assert np.isclose(fit_result['x'][4], 8.002412725482541)
+    assert np.isclose(fit_result['x'][5], 10.000408656534706)
+    assert np.isclose(fit_result['x'][6], -47.998450731121416)
 
 
-def test_cone_from_fit_result_constructors(cone_fit_result):
+def test_cone_from_fit_result_constructor(cone_fit_result):
     """Test the Cone constructors that use fitting to construct the Cone."""
     cone = geometry.Cone.from_fit_result(cone_fit_result)
 
-    assert np.isclose(cone.height, 0.5069517)
-    assert np.isclose(cone.radius, 0.50695155)
-    assert np.isclose(cone.rot_x, 3.00000021)
-    assert np.isclose(cone.rot_y, 1.00000017)
-    assert np.isclose(cone.base_pos.x, 7.99420898)
-    assert np.isclose(cone.base_pos.y, 10.00098104)
-    assert np.isclose(cone.base_pos.z, -47.99628163)
+    assert np.isclose(cone.height, 0.5028964554822218)
+    assert np.isclose(cone.radius, 0.5028961773781943)
+    assert np.isclose(cone.rot_x, 2.999999870748047)
+    assert np.isclose(cone.rot_y, 0.9999999251772242)
+    assert np.isclose(cone.base_pos.x, 8.002412725482541)
+    assert np.isclose(cone.base_pos.y, 10.000408656534706)
+    assert np.isclose(cone.base_pos.z, -47.998450731121416)
+
+
+def test_cone_from_points_constructor(xyz_cone, initial_cone):
+    """Test the Cone constructors that use fitting to construct the Cone."""
+    cone = geometry.Cone.from_points(xyz_cone, initial_guess_cone=initial_cone)
+
+    assert np.isclose(cone.height, 0.5028964554822218)
+    assert np.isclose(cone.radius, 0.5028961773781943)
+    assert np.isclose(cone.rot_x, 2.999999870748047)
+    assert np.isclose(cone.rot_y, 0.9999999251772242)
+    assert np.isclose(cone.base_pos.x, 8.002412725482541)
+    assert np.isclose(cone.base_pos.y, 10.000408656534706)
+    assert np.isclose(cone.base_pos.z, -47.998450731121416)

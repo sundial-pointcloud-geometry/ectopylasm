@@ -5,18 +5,30 @@
 output-format: grouped
 
 strictness: veryhigh
-doc-warnings: false
+doc-warnings: true
 test-warnings: true
 member-warnings: false
+max-line-length: 120
 
 ignore-paths:
   - docs
+  - ectopylasm/__init__.py
+  - ectopylasm/__version__.py
+
+mccabe:
+    run: true
 
 pyroma:
     run: true
 
 pylint:
-    run: false
+    run: true
+    disable:
+        - line-too-long   # PEP8 checks this
+        - no-else-return  # not my taste
+        - too-few-public-methods  # this gives a false positive for dataclass Point, see https://github.com/PyCQA/pylint/issues/3025
+    options:
+        good-names: x,y,z,a,b,c,d,f
 
 pyflakes:
     run: true
@@ -27,6 +39,8 @@ pep8:
         E501, # line too long (> 79 characters)
         W503, # line break before binary operator; deprecated in favor of W504
     ]
+    options:
+        max-line-length: 120
 
 pep257:
     run: true
