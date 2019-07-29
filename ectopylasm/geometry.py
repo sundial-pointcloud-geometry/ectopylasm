@@ -125,43 +125,59 @@ class Plane:
             return (-self.d / self.a, 0, 0)
 
 
+class PlaneSurfaceLimitException(RuntimeError):
+    """Raised by plane_surface when the given limits are invalid."""
+    pass
+
+
+class PlaneSurfaceNormalException(RuntimeError):
+    """Raised by plane_surface when the normal is not compatible with the limits."""
+    pass
+
+
 def plane_surface(plane: Plane, x_lim=None, y_lim=None, z_lim=None):
     """
     Get plane surface coordinates.
 
-    Calculate coordinates of the part of a plane inside a cubical box. The
-    limited coordinates are called x and z, corresponding to the first and
-    third components of `p` and `n`. The final y coordinate is calculated
-    based on the equation for a plane.
+    Calculate coordinates of the part of a plane inside a cubical box. Two of
+    the limited parameters are used to calculate the coordinates in the third
+    direction.
+
+    Note that the first number in the pairs must be smaller than the second!
+
+    You only need to provide two pairs of coordinates, so only two of x_lim,
+    y_lim and z_lim need to be defined. When all three are defined, the
+    default is to use the x and y pairs. This option to choose is useful when
+    you have a plane that has a zero normal component in one of the directions.
+    In that case, you cannot use the limits in that direction, because the
+    plane coordinates will involve a division by that normal component (which
+    would give a division by zero error).
 
     plane: a Plane object
-    x_lim: iterable of the two extrema in the x direction. The default value is
-           None, because strictly speaking you only need to provide two pairs
-           of coordinates, so only two of x_lim, y_lim and z_lim need to be
-           defined. When all three are defined, the default is to use the x and
-           y pairs. This option to choose is useful when you have a plane that
-           has a zero normal component in one of the directions. In that case,
-           you cannot use the limits in that direction, because the plane
-           coordinates will involve a division by that normal component (which
-           would give a division by zero error).
+    x_lim: iterable of the two extrema in the x direction. Default: None.
     y_lim: same as x, but for y
     z_lim: same as x, but for z
+    limit_all: see explanation above. Default: False.
     """
+    if (x_lim is not None) + (y_lim is not None) + (z_lim is not None) < 2:
+        raise PlaneSurfaceLimitException("Two or three `_lim` kwargs must not be `None`.")
+
     if plane.c != 0 and x_lim is not None and y_lim is not None:
         # get box limits in two dimensions
         x, y = np.meshgrid(x_lim, y_lim)
         # find corresponding z coordinates
         z = -(plane.a * x + plane.b * y + plane.d) / plane.c
     elif plane.b != 0 and x_lim is not None and z_lim is not None:
+        # get box limits in two dimensions
         x, z = np.meshgrid(x_lim, z_lim)
         # find corresponding y coordinates
         y = -(plane.a * x + plane.c * z + plane.d) / plane.b
-    elif plane.a != 0 and x_lim is not None and z_lim is not None:
+    elif plane.a != 0 and y_lim is not None and z_lim is not None:
         y, z = np.meshgrid(y_lim, z_lim)
         # find corresponding x coordinates
         x = -(plane.b * y + plane.c * z + plane.d) / plane.a
     else:
-        raise RuntimeError("Invalid combination of arguments! Two out of three `_lim` kwargs must not be `None`.")
+        raise PlaneSurfaceNormalException("Invalid combination of `_lim` kwargs and plane parameters; normal components must not be zero in the direction in which the limits are not provided.")
 
     return x, y, z
 
