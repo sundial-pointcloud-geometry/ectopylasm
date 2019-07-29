@@ -43,13 +43,13 @@ def pptk_plot_plydata(plydata, **kwargs):
                           plydata['vertex']['z']]).T, **kwargs)
 
 
-def ipv_plot_df(points_df, sample_frac=1, marker='circle_2d', **kwargs):
+def ipv_plot_df(points_df, sample_frac=1, marker='circle_2d', size=0.2, **kwargs):
     """Plot vertices in a dataframe using ipyvolume."""
     if sample_frac < 1:
         xyz = random_sample(points_df, len(points_df), sample_frac)
     else:
         xyz = dict(x=points_df['x'].values, y=points_df['y'].values, z=points_df['z'].values)
-    fig = ipv.scatter(**xyz, marker=marker, **kwargs)
+    fig = ipv.scatter(**xyz, marker=marker, size=size, **kwargs)
     return fig
 
 
