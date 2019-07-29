@@ -58,7 +58,8 @@ def pptk_plot_df(points_df, **kwargs):
     pptk.viewer(np.array([points_df['x'], points_df['y'], points_df['z']]).T, **kwargs)
 
 
-def plot_plane(plane: geometry.Plane, x_lim=None, z_lim=None, **kwargs):
+def plot_plane(plane: geometry.Plane, x_lim=None, y_lim=None, z_lim=None,
+               limit_all=True, **kwargs):
     """
     Draw a plane.
 
@@ -68,13 +69,27 @@ def plot_plane(plane: geometry.Plane, x_lim=None, z_lim=None, **kwargs):
 
     plane: a Plane object
     x_lim [optional]: iterable of the two extrema in the x direction
+    y_lim [optional]: same as x, but for y
     z_lim [optional]: same as x, but for z
+    limit_all [optional]: make sure that the plane surface plot is bound within
+                          all given limits
     """
     if x_lim is None:
         x_lim = ipv.pylab.gcf().xlim
+    if y_lim is None:
+        y_lim = ipv.pylab.gcf().ylim
     if z_lim is None:
         z_lim = ipv.pylab.gcf().zlim
-    fig = ipv.plot_surface(*geometry.plane_surface(plane, x_lim, z_lim), **kwargs)
+    x, y, z = geometry.plane_surface(plane, x_lim=x_lim, y_lim=y_lim,
+                                     z_lim=z_lim)
+    fig = ipv.plot_surface(x, y, z, **kwargs)
+    if limit_all:
+        if np.any(x < x_lim[0]) or np.any(x > x_lim[1]):
+            ipv.pylab.gcf().xlim = x_lim
+        if np.any(y < y_lim[0]) or np.any(y > y_lim[1]):
+            ipv.pylab.gcf().ylim = y_lim
+        if np.any(z < z_lim[0]) or np.any(z > z_lim[1]):
+            ipv.pylab.gcf().zlim = z_lim
     return fig
 
 
