@@ -18,7 +18,10 @@ LOGGER.setLevel(logging.INFO)
 
 def normalize_vector(vector):
     """Input `vector` divided by its absolute size yields a vector of size 1."""
-    return vector / np.linalg.norm(vector)
+    norm = np.linalg.norm(vector)
+    if norm == 0.:
+        raise ZeroDivisionError("A zero vector cannot be normalized")
+    return vector / norm
 
 
 def angle_between_two_vectors(a, b):
@@ -122,7 +125,7 @@ class Plane:
             return (-self.d / self.a, 0, 0)
 
 
-def plane_surface(plane: Plane, x_lim, z_lim):
+def plane_surface(plane: Plane, x_lim=None, y_lim=None, z_lim=None):
     """
     Get plane surface coordinates.
 
@@ -132,14 +135,34 @@ def plane_surface(plane: Plane, x_lim, z_lim):
     based on the equation for a plane.
 
     plane: a Plane object
-    x_lim: iterable of the two extrema in the x direction
+    x_lim: iterable of the two extrema in the x direction. The default value is
+           None, because strictly speaking you only need to provide two pairs
+           of coordinates, so only two of x_lim, y_lim and z_lim need to be
+           defined. When all three are defined, the default is to use the x and
+           y pairs. This option to choose is useful when you have a plane that
+           has a zero normal component in one of the directions. In that case,
+           you cannot use the limits in that direction, because the plane
+           coordinates will involve a division by that normal component (which
+           would give a division by zero error).
+    y_lim: same as x, but for y
     z_lim: same as x, but for z
     """
-    # get box limits in two dimensions
-    x, z = np.meshgrid(x_lim, z_lim)
+    if plane.c != 0 and x_lim is not None and y_lim is not None:
+        # get box limits in two dimensions
+        x, y = np.meshgrid(x_lim, y_lim)
+        # find corresponding z coordinates
+        z = -(plane.a * x + plane.b * y + plane.d) / plane.c
+    elif plane.b != 0 and x_lim is not None and z_lim is not None:
+        x, z = np.meshgrid(x_lim, z_lim)
+        # find corresponding y coordinates
+        y = -(plane.a * x + plane.c * z + plane.d) / plane.b
+    elif plane.a != 0 and x_lim is not None and z_lim is not None:
+        y, z = np.meshgrid(y_lim, z_lim)
+        # find corresponding x coordinates
+        x = -(plane.b * y + plane.c * z + plane.d) / plane.a
+    else:
+        raise RuntimeError("Invalid combination of arguments! Two out of three `_lim` kwargs must not be `None`.")
 
-    # find corresponding y coordinates
-    y = -(plane.a * x + plane.c * z + plane.d) / plane.b
     return x, y, z
 
 

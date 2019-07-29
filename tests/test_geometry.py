@@ -1,23 +1,41 @@
 """Geometry tests."""
-import numpy as np
-from ectopylasm import geometry
+import itertools
 
+import numpy as np
 import pytest
 
+from ectopylasm import geometry
 
-@pytest.mark.parametrize('d', [None, -1])
-def test_plane_surface(d):
+
+@pytest.mark.parametrize('a,b,c', itertools.product((-1, 0, 1), (-1, 0, 1), (-1, 0, 1)))
+def test_plane_surface(a, b, c):
     """Test geometry.plane_surface."""
-    plane = geometry.Plane.from_point(0, 1, 0, (1, 1, 1))
+    if a == 0 and b == 0 and c == 0:
+        with pytest.raises(ZeroDivisionError):
+            geometry.Plane.from_point(a, b, c, (1, 1, 1))
+    else:
+        plane = geometry.Plane.from_point(a, b, c, (1, 1, 1))
 
-    x_lim = (-1, 1)
-    z_lim = (-1, 1)
+        x_lim = (-1, 1)
+        y_lim = (-1, 1)
+        z_lim = (-1, 1)
 
-    x, y, z = geometry.plane_surface(plane, x_lim, z_lim)
+        x, y, z = geometry.plane_surface(plane, x_lim=x_lim, y_lim=y_lim, z_lim=z_lim)
 
-    assert np.all(x == np.array([[-1, 1], [-1, 1]]))
-    assert np.all(y == np.array([[1., 1.], [1., 1.]]))
-    assert np.all(z == np.array([[-1, -1], [1, 1]]))
+        first, second = np.meshgrid((-1, 1), (-1, 1))
+
+        if c != 0:
+            assert np.all(x == first)
+            assert np.all(y == second)
+            assert np.all(z == -(plane.a * first + plane.b * second + plane.d) / plane.c)
+        elif b != 0:
+            assert np.all(x == first)
+            assert np.all(z == second)
+            assert np.all(y == -(plane.a * first + plane.c * second + plane.d) / plane.b)
+        else:
+            assert np.all(y == first)
+            assert np.all(z == second)
+            assert np.all(x == -(plane.b * first + plane.c * second + plane.d) / plane.a)
 
 
 def test_filter_points_plane():
@@ -117,6 +135,12 @@ def test_normalize_vector(v, expected):
     """Test normalize_vector."""
     n = geometry.normalize_vector(v)
     assert np.allclose(n, expected)
+
+
+def test_normalize_vector_zero_vector():
+    """Test normalize_vector with a zero vector as input. Should fail."""
+    with pytest.raises(ZeroDivisionError):
+        geometry.normalize_vector([0, 0, 0])
 
 
 @pytest.mark.parametrize('a,b,expected', [
