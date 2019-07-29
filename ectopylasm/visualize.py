@@ -166,10 +166,6 @@ def plot(data, *args, **kwargs):
 
     See the documentation of those functions for how to call `plot`. All
     arguments and keyword arguments are passed on to the wrapped functions.
-
-    After this call, ipyvolume.show() is called, unless `show=False` is given.
-    If desired, ipyvolume.clear() can be called to start a new figure instead
-    of plotting in the last active ipyvolume figure.
     """
     import pandas as pd
     import vaex
