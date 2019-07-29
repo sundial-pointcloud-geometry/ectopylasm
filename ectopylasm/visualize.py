@@ -152,3 +152,43 @@ def plot_cone_fit(fit_result, **kwargs):
     cone = geometry.Cone(*fit_result['x'][:4], base_pos=geometry.Point(*fit_result['x'][4:]))
     fig = plot_cone(cone, **kwargs)
     return fig
+
+
+def plot(data, *args, **kwargs):
+    """
+    Wraps plotting functions for use in Jupyter notebooks.
+
+    Based on the type of `data`, this function will in turn call the following:
+
+    - `pandas.DataFrame` or `vaex.DataFrame`: `ipv_plot_df`.
+    - `geometry.Plane`: `plot_plane`.
+    - `geometry.Cone`: `plot_cone`.
+
+    See the documentation of those functions for how to call `plot`. All
+    arguments and keyword arguments are passed on to the wrapped functions.
+
+    After this call, ipyvolume.show() is called, unless `show=False` is given.
+    If desired, ipyvolume.clear() can be called to start a new figure instead
+    of plotting in the last active ipyvolume figure.
+    """
+    import pandas as pd
+    import vaex
+
+    if isinstance(data, (pd.DataFrame, vaex.dataframe.DataFrame)):
+        ipv_plot_df(data, *args, **kwargs)
+    elif isinstance(data, geometry.Plane):
+        plot_plane(data, *args, **kwargs)
+    elif isinstance(data, geometry.Cone):
+        plot_cone(data, *args, **kwargs)
+    else:
+        raise TypeError("Type of `data` not supported.")
+
+
+def clear():
+    """Call ipyvolume.clear()."""
+    ipv.clear()
+
+
+def show():
+    """Call `ipyvolume.show()`."""
+    ipv.show()
