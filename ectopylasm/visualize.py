@@ -85,11 +85,11 @@ def plot_plane(plane: geometry.Plane, x_lim=None, y_lim=None, z_lim=None,
     fig = ipv.plot_surface(x, y, z, **kwargs)
     if limit_all:
         if np.any(x < x_lim[0]) or np.any(x > x_lim[1]):
-            ipv.pylab.gcf().xlim = x_lim
+            ipv.pylab.xlim(*x_lim)
         if np.any(y < y_lim[0]) or np.any(y > y_lim[1]):
-            ipv.pylab.gcf().ylim = y_lim
+            ipv.pylab.ylim(*y_lim)
         if np.any(z < z_lim[0]) or np.any(z > z_lim[1]):
-            ipv.pylab.gcf().zlim = z_lim
+            ipv.pylab.zlim(*z_lim)
     return fig
 
 
