@@ -20,7 +20,26 @@ Tools for visualizing and fitting pointcloud data.
 Installation
 ************
 
-To install ectopylasm, do:
+The recommended way to install ectopylasm is by using a virtual environment. Using Miniconda, one can get a working environment on Linux with the following commands:
+
+.. code-block:: console
+
+  # on Linux
+  conda create -n ectopylasm python=3.7
+  conda activate ectopylasm
+  pip install git+https://github.com/sundial-pointcloud-geometry/ectopylasm.git
+
+On macOS, the pptk dependency is only available for Python 3.6, so there one should use:
+
+.. code-block:: console
+
+  # on macOS
+  conda create -n ectopylasm python=3.6
+  conda activate ectopylasm
+  pip install git+https://github.com/sundial-pointcloud-geometry/ectopylasm.git
+
+
+To install ectopylasm from a cloned git repo, do:
 
 .. code-block:: console
 
