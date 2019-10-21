@@ -26,7 +26,6 @@ pylint:
     disable:
         - line-too-long   # PEP8 checks this
         - no-else-return  # not my taste
-        - too-few-public-methods  # this gives a false positive for dataclass Point, see https://github.com/PyCQA/pylint/issues/3025
     options:
         good-names: x,y,z,a,b,c,d,f
 
